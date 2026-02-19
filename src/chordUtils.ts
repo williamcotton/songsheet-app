@@ -24,16 +24,23 @@ export function chordToNotes(chord: Chord): string[] | null {
   const rootSemitone = NOTE_TO_SEMITONE[chord.root]
   if (rootSemitone === undefined) return null
   const intervals = CHORD_INTERVALS[chord.type] || CHORD_INTERVALS['']
-  return intervals.map(interval => {
+  const notes = intervals.map(interval => {
     const semitone = (rootSemitone + interval) % 12
     const octave = semitone < rootSemitone ? 4 : 3
     return NOTE_NAMES[semitone] + octave
   })
+  if (chord.bass) {
+    const bassSemitone = NOTE_TO_SEMITONE[chord.bass]
+    if (bassSemitone !== undefined) {
+      notes.unshift(NOTE_NAMES[bassSemitone] + 2)
+    }
+  }
+  return notes
 }
 
 export function chordName(chord: Chord): string {
   if (!chord || !chord.root) return ''
-  return chord.root + chord.type
+  return chord.root + chord.type + (chord.bass ? '/' + chord.bass : '')
 }
 
 export function expressionToString(expr: Expression | null): string {
