@@ -1,11 +1,13 @@
+import type { Chord, Expression, Song, ChordPlaybackItem } from './types'
+
 const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
-const NOTE_TO_SEMITONE = {}
-const FLAT_MAP = { 'Db': 'C#', 'Eb': 'D#', 'Gb': 'F#', 'Ab': 'G#', 'Bb': 'A#' }
+const NOTE_TO_SEMITONE: Record<string, number> = {}
+const FLAT_MAP: Record<string, string> = { 'Db': 'C#', 'Eb': 'D#', 'Gb': 'F#', 'Ab': 'G#', 'Bb': 'A#' }
 
 NOTE_NAMES.forEach((n, i) => NOTE_TO_SEMITONE[n] = i)
 Object.entries(FLAT_MAP).forEach(([flat, sharp]) => NOTE_TO_SEMITONE[flat] = NOTE_TO_SEMITONE[sharp])
 
-const CHORD_INTERVALS = {
+const CHORD_INTERVALS: Record<string, number[]> = {
   '':     [0, 4, 7],
   'm':    [0, 3, 7],
   '7':    [0, 4, 7, 10],
@@ -17,7 +19,7 @@ const CHORD_INTERVALS = {
   'sus2': [0, 2, 7],
 }
 
-export function chordToNotes(chord) {
+export function chordToNotes(chord: Chord): string[] | null {
   if (!chord || !chord.root) return null
   const rootSemitone = NOTE_TO_SEMITONE[chord.root]
   if (rootSemitone === undefined) return null
@@ -29,12 +31,12 @@ export function chordToNotes(chord) {
   })
 }
 
-export function chordName(chord) {
+export function chordName(chord: Chord): string {
   if (!chord || !chord.root) return ''
   return chord.root + chord.type
 }
 
-export function expressionToString(expr) {
+export function expressionToString(expr: Expression | null): string {
   if (!expr) return ''
   switch (expr.type) {
     case 'section_ref':
@@ -50,12 +52,12 @@ export function expressionToString(expr) {
   }
 }
 
-export function collectAllChords(song) {
-  const result = []
+export function collectAllChords(song: Song): ChordPlaybackItem[] {
+  const result: ChordPlaybackItem[] = []
   song.structure.forEach((entry, si) => {
     if (entry.lines.length > 0) {
       entry.lines.forEach((line, li) => {
-        const markers = []
+        const markers: ({ col: number; type: 'chord'; chord: Chord } | { col: number; type: 'bar' })[] = []
         for (const chord of line.chords) {
           markers.push({ col: chord.column, type: 'chord', chord })
         }
@@ -63,7 +65,7 @@ export function collectAllChords(song) {
           markers.push({ col, type: 'bar' })
         }
         markers.sort((a, b) => a.col - b.col)
-        let currentChord = null
+        let currentChord: Chord | null = null
         markers.forEach((m, mi) => {
           if (m.type === 'chord') {
             currentChord = m.chord

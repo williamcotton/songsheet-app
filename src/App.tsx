@@ -1,7 +1,8 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { parse, transpose } from '../../songsheet/index.js'
 import * as Tone from 'tone'
-import { chordToNotes, chordName, expressionToString, collectAllChords } from './chordUtils.js'
+import { chordToNotes, chordName, expressionToString, collectAllChords } from './chordUtils.ts'
+import type { Song, Line, ActiveHighlight } from './types'
 
 const SONGS = [
   { value: 'sleeping-on-the-road.txt', label: 'Sleeping on the Road' },
@@ -10,22 +11,22 @@ const SONGS = [
 ]
 
 export default function App() {
-  const [originalSong, setOriginalSong] = useState(null)
-  const [currentSong, setCurrentSong] = useState(null)
+  const [originalSong, setOriginalSong] = useState<Song | null>(null)
+  const [currentSong, setCurrentSong] = useState<Song | null>(null)
   const [semitoneOffset, setSemitoneOffset] = useState(0)
   const [isPlaying, setIsPlaying] = useState(false)
   const [metronomeEnabled, setMetronomeEnabled] = useState(true)
   const [bpm, setBpm] = useState(72)
   const [selectedFile, setSelectedFile] = useState('')
-  const [activeHighlight, setActiveHighlight] = useState(null)
+  const [activeHighlight, setActiveHighlight] = useState<ActiveHighlight | null>(null)
 
-  const synthRef = useRef(null)
-  const clickSynthRef = useRef(null)
+  const synthRef = useRef<Tone.PolySynth | null>(null)
+  const clickSynthRef = useRef<Tone.NoiseSynth | null>(null)
   const metronomeEnabledRef = useRef(false)
   const isPlayingRef = useRef(false)
   const scrollTargetRef = useRef(0)
-  const scrollAnimRef = useRef(null)
-  const controlsRef = useRef(null)
+  const scrollAnimRef = useRef<number | null>(null)
+  const controlsRef = useRef<HTMLDivElement>(null)
 
   // Keep refs in sync with state to avoid stale closures in Tone.js callbacks
   useEffect(() => { metronomeEnabledRef.current = metronomeEnabled }, [metronomeEnabled])
@@ -41,7 +42,7 @@ export default function App() {
       ? sectionEl.querySelector(`.line-pair[data-line-index="${lineIndex}"]`) || sectionEl
       : sectionEl
     const controlsHeight = controlsRef.current ? controlsRef.current.offsetHeight : 0
-    let target = scrollEl.offsetTop - controlsHeight - window.innerHeight * 0.3
+    let target = (scrollEl as HTMLElement).offsetTop - controlsHeight - window.innerHeight * 0.3
     target = Math.max(0, target)
     scrollTargetRef.current = target
   }, [activeHighlight])
@@ -87,7 +88,7 @@ export default function App() {
         envelope: { attack: 0.05, decay: 0.3, sustain: 0.4, release: 0.8 },
         volume: -8,
       }
-    })
+    } as unknown as Partial<Tone.SynthOptions>)
     synthRef.current.toDestination()
 
     if (clickSynthRef.current) clickSynthRef.current.dispose()
@@ -99,7 +100,7 @@ export default function App() {
     clickSynthRef.current.toDestination()
   }
 
-  function scheduleSong(song) {
+  function scheduleSong(song: Song) {
     Tone.getTransport().cancel()
 
     const allChords = collectAllChords(song)
@@ -171,7 +172,7 @@ export default function App() {
     setIsPlaying(false)
   }
 
-  async function startPlayback(song) {
+  async function startPlayback(song: Song | null) {
     if (!song || isPlayingRef.current) return
 
     await Tone.start()
@@ -190,7 +191,7 @@ export default function App() {
     startAutoScroll()
   }
 
-  async function handleSongChange(e) {
+  async function handleSongChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const filename = e.target.value
     setSelectedFile(filename)
 
@@ -213,13 +214,13 @@ export default function App() {
     }
   }
 
-  function handleBpmChange(e) {
+  function handleBpmChange(e: React.ChangeEvent<HTMLInputElement>) {
     const val = parseInt(e.target.value, 10)
     setBpm(val)
     Tone.getTransport().bpm.value = val
   }
 
-  function applyTranspose(delta, origSong, offset) {
+  function applyTranspose(delta: number, origSong: Song | null, offset: number) {
     if (!origSong) return
     const newOffset = offset + delta
     setSemitoneOffset(newOffset)
@@ -230,15 +231,15 @@ export default function App() {
     }
   }
 
-  function transposeLabel(offset) {
+  function transposeLabel(offset: number): string {
     if (offset === 0) return '0'
     return (offset >= 0 ? '+' : '') + offset
   }
 
   // ─── Rendering helpers ────────────────────────────────────────────
 
-  function renderChordRow(line, si, li, highlight) {
-    const markers = []
+  function renderChordRow(line: Line, si: number, li: number, highlight: ActiveHighlight | null): React.ReactNode[] {
+    const markers: { col: number; text: string }[] = []
     for (const chord of line.chords) {
       markers.push({ col: chord.column, text: chordName(chord) })
     }
@@ -247,7 +248,7 @@ export default function App() {
     }
     markers.sort((a, b) => a.col - b.col)
 
-    const elements = []
+    const elements: React.ReactNode[] = []
     let pos = 0
     markers.forEach((m, mi) => {
       if (m.col > pos) {
@@ -273,12 +274,12 @@ export default function App() {
     return elements
   }
 
-  function renderSongContent(song, highlight) {
+  function renderSongContent(song: Song | null, highlight: ActiveHighlight | null): React.ReactNode {
     if (!song) {
       return <p className="no-song">Select a song to get started.</p>
     }
 
-    const elements = []
+    const elements: React.ReactNode[] = []
 
     elements.push(<div key="title" id="song-title">{song.title}</div>)
     elements.push(<div key="author" id="song-author">{song.author}</div>)
@@ -288,7 +289,7 @@ export default function App() {
       const label = entry.sectionType.charAt(0).toUpperCase() + entry.sectionType.slice(1)
       const indexLabel = entry.sectionIndex > 0 ? ' ' + (entry.sectionIndex + 1) : ''
 
-      const sectionChildren = []
+      const sectionChildren: React.ReactNode[] = []
       sectionChildren.push(
         <div key="header" className="section-header">{label + indexLabel}</div>
       )
@@ -299,7 +300,7 @@ export default function App() {
             highlight.structureIndex === si &&
             highlight.lineIndex === li
 
-          const pairChildren = []
+          const pairChildren: React.ReactNode[] = []
 
           if (line.chords.length > 0 || line.barLines.length > 0) {
             pairChildren.push(
@@ -334,7 +335,7 @@ export default function App() {
           )
         }
       } else if (entry.chords.length > 0) {
-        const chordChildren = []
+        const chordChildren: React.ReactNode[] = []
         entry.chords.forEach((c, ci) => {
           if (ci > 0) chordChildren.push('  ')
           const isActive = highlight &&
