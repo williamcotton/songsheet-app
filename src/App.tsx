@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { parse, transpose } from '../../songsheet/index.js'
+import { parse, transpose } from 'songsheet'
 import * as Tone from 'tone'
 import { chordToNotes, chordName, expressionToString, collectAllChords } from './chordUtils.ts'
 import type { Song, Line, ActiveHighlight } from './types'
