@@ -55,7 +55,7 @@ export interface Song {
   title: string
   author: string
   bpm: number | null
-  timeSignature?: TimeSignature | null
+  timeSignature: TimeSignature | null
   sections: Record<string, Section>
   structure: StructureEntry[]
 }
