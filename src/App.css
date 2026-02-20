@@ -165,12 +165,18 @@ input[type="range"] {
   font-size: 16px;
 }
 
-#btn-metronome {
+#btn-metronome, #btn-nashville {
   min-width: auto;
   padding: 6px 8px;
   font-size: 13px;
 }
-#btn-metronome.on {
+#btn-metronome.on, #btn-nashville.on {
   background: #e94560;
   color: #fff;
 }
+
+.chord-decorator { color: #a0a0c0; }
+.chord-diamond .chord-decorator { color: #f0c040; }
+.chord-push .chord-decorator { color: #53d8fb; }
+.chord-stop .chord-decorator { color: #e94560; }
+.chord-nashville { text-decoration: underline; text-decoration-style: dotted; }

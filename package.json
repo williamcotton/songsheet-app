@@ -11,7 +11,7 @@
   "dependencies": {
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "songsheet": "^6.1.0",
+    "songsheet": "^6.2.0",
     "tone": "^14.9.2"
   },
   "devDependencies": {

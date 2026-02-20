@@ -3,6 +3,11 @@ export interface Chord {
   root: string
   type: string
   bass?: string
+  nashville?: boolean
+  diamond?: boolean
+  push?: boolean
+  stop?: boolean
+  splitMeasure?: Chord[]
 }
 
 export interface PositionedChord extends Chord {
@@ -56,6 +61,7 @@ export interface Song {
   author: string
   bpm: number | null
   timeSignature: TimeSignature | null
+  key: string | null
   sections: Record<string, Section>
   structure: StructureEntry[]
 }

@@ -1,13 +1,14 @@
-import { useState, useRef, useEffect } from 'react'
-import { parse, transpose } from 'songsheet'
+import { useState, useRef, useEffect, useMemo } from 'react'
+import { parse, transpose, toNashville, toStandard } from 'songsheet'
 import * as Tone from 'tone'
-import { chordToNotes, chordName, expressionToString, collectAllChords } from './chordUtils.ts'
-import type { Song, Line, ActiveHighlight } from './types'
+import { chordToNotes, chordName, chordDisplayText, expressionToString, collectAllChords } from './chordUtils.ts'
+import type { Song, Line, Chord, ActiveHighlight } from './types'
 
 const SONGS = [
   { value: 'sleeping-on-the-road.txt', label: 'Sleeping on the Road' },
   { value: 'spent-some-time-in-buffalo.txt', label: 'Spent Some Time in Buffalo' },
   { value: 'riot-on-a-screen.txt', label: 'Riot on a Screen' },
+  { value: 'america.txt', label: 'America' },
 ]
 
 export default function App() {
@@ -19,6 +20,7 @@ export default function App() {
   const [bpm, setBpm] = useState(72)
   const [selectedFile, setSelectedFile] = useState('')
   const [activeHighlight, setActiveHighlight] = useState<ActiveHighlight | null>(null)
+  const [nashvilleMode, setNashvilleMode] = useState(false)
 
   const synthRef = useRef<Tone.PolySynth | null>(null)
   const clickSynthRef = useRef<Tone.NoiseSynth | null>(null)
@@ -31,6 +33,15 @@ export default function App() {
   // Keep refs in sync with state to avoid stale closures in Tone.js callbacks
   useEffect(() => { metronomeEnabledRef.current = metronomeEnabled }, [metronomeEnabled])
   useEffect(() => { isPlayingRef.current = isPlaying }, [isPlaying])
+
+  // Derive displaySong: applies Nashville conversion for rendering
+  const displaySong = useMemo(() => {
+    if (!currentSong) return null
+    const key = currentSong.key
+    if (!key) return currentSong
+    if (nashvilleMode) return toNashville(currentSong, key)
+    return toStandard(currentSong, key)
+  }, [currentSong, nashvilleMode])
 
   // Update scroll target when highlight changes
   useEffect(() => {
@@ -103,10 +114,16 @@ export default function App() {
   function scheduleSong(song: Song) {
     Tone.getTransport().cancel()
 
-    const allChords = collectAllChords(song)
+    // For playback, always use standard notation (letter roots) so MIDI works
+    let playbackSong = song
+    if (song.key) {
+      playbackSong = toStandard(song, song.key)
+    }
+
+    const allChords = collectAllChords(playbackSong)
     if (allChords.length === 0) return
 
-    const measureDur = Tone.Time('1n').toSeconds()
+    const measureDur = Tone.Time('1m').toSeconds()
     const beatDur = Tone.Time('4n').toSeconds()
 
     allChords.forEach((item, i) => {
@@ -125,8 +142,9 @@ export default function App() {
         }, t)
       }, time)
 
-      // Metronome: 4 clicks per measure
-      for (let beat = 0; beat < 4; beat++) {
+      // Metronome: click on each beat of the measure
+      const beatsInMeasure = Tone.getTransport().timeSignature as number
+      for (let beat = 0; beat < beatsInMeasure; beat++) {
         Tone.getTransport().schedule(t => {
           if (metronomeEnabledRef.current && clickSynthRef.current) {
             clickSynthRef.current.triggerAttackRelease('32n', t)
@@ -136,7 +154,7 @@ export default function App() {
     })
 
     // Schedule end-of-song stop
-    const endTime = Tone.Time('1n').toSeconds() * allChords.length
+    const endTime = Tone.Time('1m').toSeconds() * allChords.length
     Tone.getTransport().schedule(() => {
       Tone.getDraw().schedule(() => {
         doStopPlayback()
@@ -183,6 +201,7 @@ export default function App() {
     }
     initSynth()
     Tone.getTransport().bpm.value = bpm
+    Tone.getTransport().timeSignature = song.timeSignature ? song.timeSignature.beats : 4
     Tone.getTransport().position = 0
     scheduleSong(song)
     Tone.getTransport().start()
@@ -208,6 +227,7 @@ export default function App() {
         setBpm(parsed.bpm)
         Tone.getTransport().bpm.value = parsed.bpm
       }
+      Tone.getTransport().timeSignature = parsed.timeSignature ? parsed.timeSignature.beats : 4
     } else {
       setOriginalSong(null)
       setCurrentSong(null)
@@ -238,13 +258,78 @@ export default function App() {
 
   // ─── Rendering helpers ────────────────────────────────────────────
 
+  function renderChordMarker(chord: Chord, si: number, li: number, mi: number, highlight: ActiveHighlight | null): React.ReactNode {
+    const isActive = highlight &&
+      highlight.structureIndex === si &&
+      highlight.lineIndex === li &&
+      highlight.markerIndex === mi
+    const name = chordName(chord)
+    const nashvilleClass = chord.nashville ? ' chord-nashville' : ''
+
+    if (chord.diamond) {
+      return (
+        <span
+          key={`${si}-${li}-${mi}`}
+          className={'chord-marker chord-diamond' + (isActive ? ' active-marker' : '') + nashvilleClass}
+          data-si={si} data-li={li} data-mi={mi}
+        >
+          <span className="chord-decorator">{'<'}</span>{name}<span className="chord-decorator">{'>'}</span>
+        </span>
+      )
+    }
+    if (chord.push) {
+      return (
+        <span
+          key={`${si}-${li}-${mi}`}
+          className={'chord-marker chord-push' + (isActive ? ' active-marker' : '') + nashvilleClass}
+          data-si={si} data-li={li} data-mi={mi}
+        >
+          <span className="chord-decorator">{'^'}</span>{name}{chord.stop && <span className="chord-decorator">{'!'}</span>}
+        </span>
+      )
+    }
+    if (chord.stop && !chord.push) {
+      return (
+        <span
+          key={`${si}-${li}-${mi}`}
+          className={'chord-marker chord-stop' + (isActive ? ' active-marker' : '') + nashvilleClass}
+          data-si={si} data-li={li} data-mi={mi}
+        >
+          {name}<span className="chord-decorator">{'!'}</span>
+        </span>
+      )
+    }
+    if (chord.splitMeasure) {
+      const inner = chord.splitMeasure.map(c => c.root + c.type + (c.bass ? '/' + c.bass : '')).join(' ')
+      return (
+        <span
+          key={`${si}-${li}-${mi}`}
+          className={'chord-marker chord-split' + (isActive ? ' active-marker' : '') + nashvilleClass}
+          data-si={si} data-li={li} data-mi={mi}
+        >
+          <span className="chord-decorator">{'['}</span>{inner}<span className="chord-decorator">{']'}</span>
+        </span>
+      )
+    }
+
+    return (
+      <span
+        key={`${si}-${li}-${mi}`}
+        className={'chord-marker' + (isActive ? ' active-marker' : '') + nashvilleClass}
+        data-si={si} data-li={li} data-mi={mi}
+      >
+        {name}
+      </span>
+    )
+  }
+
   function renderChordRow(line: Line, si: number, li: number, highlight: ActiveHighlight | null): React.ReactNode[] {
-    const markers: { col: number; text: string }[] = []
+    const markers: { col: number; chord?: Chord; isBar?: boolean }[] = []
     for (const chord of line.chords) {
-      markers.push({ col: chord.column, text: chordName(chord) })
+      markers.push({ col: chord.column, chord })
     }
     for (const col of line.barLines) {
-      markers.push({ col, text: '|' })
+      markers.push({ col, isBar: true })
     }
     markers.sort((a, b) => a.col - b.col)
 
@@ -254,22 +339,15 @@ export default function App() {
       if (m.col > pos) {
         elements.push('\u00A0'.repeat(m.col - pos))
       }
-      const isActive = highlight &&
-        highlight.structureIndex === si &&
-        highlight.lineIndex === li &&
-        highlight.markerIndex === mi
-      elements.push(
-        <span
-          key={`${si}-${li}-${mi}`}
-          className={'chord-marker' + (isActive ? ' active-marker' : '')}
-          data-si={si}
-          data-li={li}
-          data-mi={mi}
-        >
-          {m.text}
-        </span>
-      )
-      pos = m.col + m.text.length
+      if (m.isBar) {
+        elements.push(
+          <span key={`${si}-${li}-bar-${mi}`} className="chord-marker">|</span>
+        )
+        pos = m.col + 1
+      } else if (m.chord) {
+        elements.push(renderChordMarker(m.chord, si, li, mi, highlight))
+        pos = m.col + chordDisplayText(m.chord).length
+      }
     })
     return elements
   }
@@ -345,7 +423,7 @@ export default function App() {
           chordChildren.push(
             <span
               key={`${si}-d-${ci}`}
-              className={'chord-marker' + (isActive ? ' active-marker' : '')}
+              className={'chord-marker' + (isActive ? ' active-marker' : '') + (c.nashville ? ' chord-nashville' : '')}
               data-si={si}
               data-li={-1}
               data-mi={ci}
@@ -452,10 +530,22 @@ export default function App() {
             +
           </button>
         </div>
+
+        <div className="control-group">
+          <button
+            id="btn-nashville"
+            className={nashvilleMode ? 'on' : ''}
+            disabled={!currentSong?.key}
+            title="Toggle Nashville Number System"
+            onClick={() => setNashvilleMode(v => !v)}
+          >
+            NNS
+          </button>
+        </div>
       </div>
 
       <div id="song-display">
-        {renderSongContent(currentSong, activeHighlight)}
+        {renderSongContent(displaySong, activeHighlight)}
       </div>
     </>
   )

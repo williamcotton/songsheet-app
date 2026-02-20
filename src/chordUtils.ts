@@ -21,6 +21,7 @@ const CHORD_INTERVALS: Record<string, number[]> = {
 
 export function chordToNotes(chord: Chord): string[] | null {
   if (!chord || !chord.root) return null
+  if (chord.nashville) return null
   const rootSemitone = NOTE_TO_SEMITONE[chord.root]
   if (rootSemitone === undefined) return null
   const intervals = CHORD_INTERVALS[chord.type] || CHORD_INTERVALS['']
@@ -41,6 +42,21 @@ export function chordToNotes(chord: Chord): string[] | null {
 export function chordName(chord: Chord): string {
   if (!chord || !chord.root) return ''
   return chord.root + chord.type + (chord.bass ? '/' + chord.bass : '')
+}
+
+export function chordDisplayText(chord: Chord): string {
+  const name = chordName(chord)
+  if (chord.diamond) return '<' + name + '>'
+  if (chord.push) return '^' + name + (chord.stop ? '!' : '')
+  if (chord.stop) return name + '!'
+  if (chord.splitMeasure) {
+    return '[' + chord.splitMeasure.map(c => c.root + c.type + (c.bass ? '/' + c.bass : '')).join(' ') + ']'
+  }
+  return name
+}
+
+export function chordDisplayWidth(chord: Chord): number {
+  return chordDisplayText(chord).length
 }
 
 export function expressionToString(expr: Expression | null): string {
@@ -76,7 +92,14 @@ export function collectAllChords(song: Song): ChordPlaybackItem[] {
         markers.forEach((m, mi) => {
           if (m.type === 'chord') {
             currentChord = m.chord
-            result.push({ chord: currentChord, structureIndex: si, lineIndex: li, markerIndex: mi })
+            // Expand split measures into multiple playback items
+            if (currentChord.splitMeasure && currentChord.splitMeasure.length > 0) {
+              currentChord.splitMeasure.forEach(sc => {
+                result.push({ chord: sc, structureIndex: si, lineIndex: li, markerIndex: mi })
+              })
+            } else {
+              result.push({ chord: currentChord, structureIndex: si, lineIndex: li, markerIndex: mi })
+            }
           } else if (currentChord) {
             result.push({ chord: currentChord, structureIndex: si, lineIndex: li, markerIndex: mi })
           }
@@ -84,7 +107,13 @@ export function collectAllChords(song: Song): ChordPlaybackItem[] {
       })
     } else {
       entry.chords.forEach((chord, ci) => {
-        result.push({ chord, structureIndex: si, lineIndex: -1, markerIndex: ci })
+        if (chord.splitMeasure && chord.splitMeasure.length > 0) {
+          chord.splitMeasure.forEach(sc => {
+            result.push({ chord: sc, structureIndex: si, lineIndex: -1, markerIndex: ci })
+          })
+        } else {
+          result.push({ chord, structureIndex: si, lineIndex: -1, markerIndex: ci })
+        }
       })
     }
   })
