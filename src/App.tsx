@@ -126,13 +126,25 @@ export default function App() {
     const measureDur = Tone.Time('1m').toSeconds()
     const beatDur = Tone.Time('4n').toSeconds()
 
+    const eighthNoteDur = beatDur / 2
+
     allChords.forEach((item, i) => {
       const time = measureDur * i
+
+      // Push chords are anticipated — sound an eighth note before the downbeat
+      const chordTime = item.chord.push && time >= eighthNoteDur
+        ? time - eighthNoteDur
+        : time
+
       Tone.getTransport().schedule(t => {
         const notes = chordToNotes(item.chord)
         if (notes && synthRef.current) {
           synthRef.current.triggerAttackRelease(notes, '2n', t)
         }
+      }, chordTime)
+
+      // Highlight stays on the grid beat (not pushed early)
+      Tone.getTransport().schedule(t => {
         Tone.getDraw().schedule(() => {
           setActiveHighlight({
             structureIndex: item.structureIndex,
