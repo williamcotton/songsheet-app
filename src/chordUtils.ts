@@ -1,4 +1,4 @@
-import type { Chord, Expression, Song, ChordPlaybackItem } from './types'
+import type { Chord, BarLine, Expression, Song, ChordPlaybackItem } from './types'
 
 const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
 const NOTE_TO_SEMITONE: Record<string, number> = {}
@@ -80,12 +80,14 @@ export function collectAllChords(song: Song): ChordPlaybackItem[] {
   song.structure.forEach((entry, si) => {
     if (entry.lines.length > 0) {
       entry.lines.forEach((line, li) => {
-        const markers: ({ col: number; type: 'chord'; chord: Chord } | { col: number; type: 'bar' })[] = []
+        const markers: ({ col: number; type: 'chord'; chord: Chord } | { col: number; type: 'bar'; barChord?: Chord })[] = []
         for (const chord of line.chords) {
           markers.push({ col: chord.column, type: 'chord', chord })
         }
-        for (const col of line.barLines) {
-          markers.push({ col, type: 'bar' })
+        for (const bar of line.barLines) {
+          const entry: { col: number; type: 'bar'; barChord?: Chord } = { col: bar.column, type: 'bar' }
+          if (bar.chord) entry.barChord = bar.chord
+          markers.push(entry)
         }
         markers.sort((a, b) => a.col - b.col)
         let currentChord: Chord | null = null
@@ -100,8 +102,12 @@ export function collectAllChords(song: Song): ChordPlaybackItem[] {
             } else {
               result.push({ chord: currentChord, structureIndex: si, lineIndex: li, markerIndex: mi })
             }
-          } else if (currentChord) {
-            result.push({ chord: currentChord, structureIndex: si, lineIndex: li, markerIndex: mi })
+          } else {
+            // Bar line: use parser-provided chord (carries across lines), or currentChord
+            const playChord = m.barChord || currentChord
+            if (playChord) {
+              result.push({ chord: playChord, structureIndex: si, lineIndex: li, markerIndex: mi })
+            }
           }
         })
       })

@@ -9,6 +9,7 @@ const SONGS = [
   { value: 'spent-some-time-in-buffalo.txt', label: 'Spent Some Time in Buffalo' },
   { value: 'riot-on-a-screen.txt', label: 'Riot on a Screen' },
   { value: 'america.txt', label: 'America' },
+  { value: 'a-way-out-online.txt', label: 'A Way Out Online' },
 ]
 
 export default function App() {
@@ -340,8 +341,8 @@ export default function App() {
     for (const chord of line.chords) {
       markers.push({ col: chord.column, chord })
     }
-    for (const col of line.barLines) {
-      markers.push({ col, isBar: true })
+    for (const bar of line.barLines) {
+      markers.push({ col: bar.column, isBar: true })
     }
     markers.sort((a, b) => a.col - b.col)
 
@@ -352,8 +353,12 @@ export default function App() {
         elements.push('\u00A0'.repeat(m.col - pos))
       }
       if (m.isBar) {
+        const isBarActive = highlight &&
+          highlight.structureIndex === si &&
+          highlight.lineIndex === li &&
+          highlight.markerIndex === mi
         elements.push(
-          <span key={`${si}-${li}-bar-${mi}`} className="chord-marker">|</span>
+          <span key={`${si}-${li}-bar-${mi}`} className={'chord-marker' + (isBarActive ? ' active-marker' : '')}>|</span>
         )
         pos = m.col + 1
       } else if (m.chord) {
