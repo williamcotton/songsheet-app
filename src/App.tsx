@@ -350,7 +350,7 @@ export default function App() {
     let pos = 0
     markers.forEach((m, mi) => {
       if (m.col > pos) {
-        elements.push('\u00A0'.repeat(m.col - pos))
+        elements.push(' '.repeat(m.col - pos))
       }
       if (m.isBar) {
         const isBarActive = highlight &&
