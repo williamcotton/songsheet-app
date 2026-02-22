@@ -19,7 +19,10 @@ Single-page React 19 app that displays interactive songsheets with audio playbac
 
 ### Source Files
 
-- `src/App.tsx` — The entire UI: song selector, playback/transpose/BPM controls, and song rendering. All state lives here (no external state management). Playback is driven by Tone.js Transport scheduling.
+- `src/App.tsx` — UI only: song selector, playback/transpose/BPM controls, and song rendering. Owns song state, Nashville toggle, and transpose logic. Delegates audio to `useAudioPlayback` and scrolling to `useAutoScroll`.
+- `src/audioEngine.ts` — Pure Tone.js `AudioEngine` class with no React dependency. Manages PolySynth/NoiseSynth creation, Transport scheduling, and playback lifecycle. Communicates back via a callbacks object (`onPositionChange`, `onPlaybackEnd`, `onMetronomeEnabledRead`).
+- `src/useAudioPlayback.ts` — React hook wrapping `AudioEngine`. Owns `isPlaying`, `metronomeEnabled`, `bpm`, and `activeHighlight` state. Handles ref-sync for stale closure prevention and Safari `visibilitychange` workaround.
+- `src/useAutoScroll.ts` — Smooth-scroll hook using `requestAnimationFrame`. Starts/stops the scroll loop based on `isScrolling` prop. Exposes `scrollTo(target)` — the caller (App.tsx) computes DOM scroll targets.
 - `src/chordUtils.ts` — Pure utility functions: `chordToNotes()` (chord → MIDI note array for synth), `chordName()`, `expressionToString()`, and `collectAllChords()` which flattens the song's structure into an ordered `ChordPlaybackItem[]` for scheduling.
 - `src/types.ts` — TypeScript interfaces for the Song AST (`Song`, `StructureEntry`, `Line`, `Chord`, `Expression`, etc.) and app-specific types (`ActiveHighlight`, `ChordPlaybackItem`).
 - `src/main.tsx` — Entry point, renders `<App />` into `#root`.
@@ -28,15 +31,16 @@ Single-page React 19 app that displays interactive songsheets with audio playbac
 ### Data Flow
 
 1. User selects a song → `fetch('/songs/<name>.txt')` → `parse(text)` from the `songsheet` npm package → `Song` AST stored in state
-2. Transpose buttons call `transpose(song, offset)` from the library and replace the current song
-3. Play button: `Tone.start()` → `initSynth()` → `scheduleSong()` schedules one Transport event per chord (using `collectAllChords`), plus 4 metronome clicks per measure
-4. Each scheduled chord triggers `synthRef.current.triggerAttackRelease()` and updates `activeHighlight` state via `Tone.Draw` for synchronized UI highlighting
-5. Auto-scroll smoothly follows the active highlight using `requestAnimationFrame`
+2. Transpose buttons call `transpose(song, offset)` from the library and replace the current song; `audio.reschedule()` re-schedules during playback
+3. Play button: `audio.startPlayback(song)` → `AudioEngine.start()` → `Tone.start()`, `initSynth()`, `scheduleSong()`, `Transport.start()`
+4. Each scheduled chord triggers `PolySynth.triggerAttackRelease()` and fires `onPositionChange` callback via `Tone.Draw` → React state update
+5. `useAutoScroll` runs a rAF loop while playing; App.tsx computes DOM scroll targets from `activeHighlight` and calls `scrollTo(target)`
 
 ### Key Patterns
 
-- **Refs for Tone.js callbacks**: `metronomeEnabledRef` and `isPlayingRef` mirror their state counterparts to avoid stale closures in Transport callbacks
-- **Safari audio workaround**: `visibilitychange` listener resumes `AudioContext` and re-initializes synths when tab becomes visible
+- **AudioEngine callbacks**: The engine is a plain class — it calls `onPositionChange`, `onPlaybackEnd`, and reads `onMetronomeEnabledRead()` instead of touching React state directly
+- **Refs for Tone.js callbacks**: `metronomeEnabledRef` and `isPlayingRef` in `useAudioPlayback` mirror state to avoid stale closures in Transport callbacks
+- **Safari audio workaround**: `visibilitychange` listener in `useAudioPlayback` calls `engine.resumeContext()` to resume `AudioContext` and re-init synths
 - **Sticky controls**: `#controls` is `position: sticky; top: 0` — `controlsRef` measures its height for scroll offset calculations
 
 ## Dependencies
