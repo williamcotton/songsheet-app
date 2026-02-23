@@ -19,6 +19,8 @@ export class AudioEngine {
   private synthRef: Tone.PolySynth | null = null
   private clickSynthRef: Tone.NoiseSynth | null = null
   private callbacks: AudioEngineCallbacks
+  private currentSong: Song | null = null
+  private measureDur: number = 0
 
   constructor(callbacks: AudioEngineCallbacks) {
     this.callbacks = callbacks
@@ -47,6 +49,7 @@ export class AudioEngine {
   }
 
   scheduleSong(song: Song) {
+    this.currentSong = song
     Tone.getTransport().cancel()
 
     // For playback, always use standard notation (letter roots) so MIDI works
@@ -59,6 +62,7 @@ export class AudioEngine {
     if (allChords.length === 0) return
 
     const measureDur = Tone.Time('1m').toSeconds()
+    this.measureDur = measureDur
     const beatDur = Tone.Time('4n').toSeconds()
     const eighthNoteDur = beatDur / 2
 
@@ -126,7 +130,9 @@ export class AudioEngine {
   stop() {
     Tone.getTransport().stop()
     Tone.getTransport().cancel()
+    Tone.getTransport().loop = false
     if (this.synthRef) this.synthRef.releaseAll()
+    this.currentSong = null
   }
 
   reschedule(song: Song) {
@@ -139,6 +145,33 @@ export class AudioEngine {
 
   setTimeSignature(beats: number) {
     Tone.getTransport().timeSignature = beats
+  }
+
+  pause() {
+    Tone.getTransport().pause()
+    if (this.synthRef) this.synthRef.releaseAll()
+  }
+
+  resume() {
+    Tone.getTransport().start()
+  }
+
+  seekTo(chordIndex: number) {
+    if (this.synthRef) this.synthRef.releaseAll()
+    if (this.currentSong) {
+      this.scheduleSong(this.currentSong)
+    }
+    Tone.getTransport().seconds = this.measureDur * chordIndex
+  }
+
+  setVamp(startChordIndex: number, endChordIndex: number) {
+    Tone.getTransport().loopStart = this.measureDur * startChordIndex
+    Tone.getTransport().loopEnd = this.measureDur * endChordIndex
+    Tone.getTransport().loop = true
+  }
+
+  clearVamp() {
+    Tone.getTransport().loop = false
   }
 
   async resumeContext(isPlaying: boolean) {

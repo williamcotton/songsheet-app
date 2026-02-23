@@ -75,6 +75,25 @@ export function expressionToString(expr: Expression | null): string {
   }
 }
 
+export function findChordIndex(allChords: ChordPlaybackItem[], structureIndex: number, lineIndex: number): number {
+  return allChords.findIndex(
+    item => item.structureIndex === structureIndex && item.lineIndex === lineIndex
+  )
+}
+
+export function getChordRangeForSection(allChords: ChordPlaybackItem[], structureIndex: number): { start: number; end: number } | null {
+  let start = -1
+  let end = -1
+  for (let i = 0; i < allChords.length; i++) {
+    if (allChords[i].structureIndex === structureIndex) {
+      if (start === -1) start = i
+      end = i + 1
+    }
+  }
+  if (start === -1) return null
+  return { start, end }
+}
+
 export function collectAllChords(song: Song): ChordPlaybackItem[] {
   const result: ChordPlaybackItem[] = []
   song.structure.forEach((entry, si) => {

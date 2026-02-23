@@ -84,3 +84,5 @@ export interface ChordPlaybackItem {
   lineIndex: number
   markerIndex: number
 }
+
+export type PlaybackState = 'stopped' | 'playing' | 'paused'

@@ -46,14 +46,19 @@ export default function App() {
     const controlsHeight = controlsRef.current ? controlsRef.current.offsetHeight : 0
     let target = (scrollEl as HTMLElement).offsetTop - controlsHeight - window.innerHeight * 0.3
     target = Math.max(0, target)
-    scrollTo(target)
-  }, [audio.activeHighlight, scrollTo])
+    if (audio.isPlaying) {
+      scrollTo(target)
+    } else {
+      // When paused or seeking while paused, jump instantly
+      window.scrollTo(0, target)
+    }
+  }, [audio.activeHighlight, audio.isPlaying, scrollTo])
 
   async function handleSongChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const filename = e.target.value
     setSelectedFile(filename)
 
-    if (audio.isPlaying) audio.stopPlayback()
+    if (audio.playbackState !== 'stopped') audio.stopPlayback()
 
     if (filename) {
       const resp = await fetch('/songs/' + filename)
@@ -84,6 +89,43 @@ export default function App() {
   function transposeLabel(offset: number): string {
     if (offset === 0) return '0'
     return (offset >= 0 ? '+' : '') + offset
+  }
+
+  // ─── Click-to-seek & vamp handlers ──────────────────────────────
+
+  function handleSongClick(e: React.MouseEvent<HTMLDivElement>) {
+    if (!currentSong) return
+    if (e.detail > 1) return // ignore double-clicks
+
+    const target = e.target as HTMLElement
+    const linePair = target.closest('.line-pair') as HTMLElement | null
+    const section = target.closest('.section') as HTMLElement | null
+    if (!section) return
+
+    const si = parseInt(section.dataset.structureIndex ?? '', 10)
+    if (isNaN(si)) return
+
+    let li = 0
+    if (linePair) {
+      li = parseInt(linePair.dataset.lineIndex ?? '0', 10)
+    } else {
+      // Clicked on directive-chords or section header area
+      li = -1
+    }
+
+    audio.seekTo(currentSong, si, li)
+  }
+
+  function handleSectionDoubleClick(e: React.MouseEvent<HTMLDivElement>) {
+    if (!currentSong) return
+    const target = e.target as HTMLElement
+    const header = target.closest('.section-header') as HTMLElement | null
+    if (!header) return
+    const section = header.closest('.section') as HTMLElement | null
+    if (!section) return
+    const si = parseInt(section.dataset.structureIndex ?? '', 10)
+    if (isNaN(si)) return
+    audio.toggleVamp(currentSong, si)
   }
 
   // ─── Rendering helpers ────────────────────────────────────────────
@@ -198,12 +240,16 @@ export default function App() {
 
     song.structure.forEach((entry, si) => {
       const isSectionActive = highlight && highlight.structureIndex === si
+      const isVamped = audio.vampSection === si
       const label = entry.sectionType.charAt(0).toUpperCase() + entry.sectionType.slice(1)
       const indexLabel = entry.sectionIndex > 0 ? ' ' + (entry.sectionIndex + 1) : ''
 
       const sectionChildren: React.ReactNode[] = []
       sectionChildren.push(
-        <div key="header" className="section-header">{label + indexLabel}</div>
+        <div key="header" className="section-header">
+          {label + indexLabel}
+          {isVamped && <span className="vamp-badge">looping</span>}
+        </div>
       )
 
       if (entry.lines.length > 0) {
@@ -283,7 +329,7 @@ export default function App() {
       elements.push(
         <div
           key={`section-${si}`}
-          className={'section' + (isSectionActive ? ' active-section' : '')}
+          className={'section' + (isSectionActive ? ' active-section' : '') + (isVamped ? ' vamped-section' : '')}
           data-structure-index={si}
         >
           {sectionChildren}
@@ -311,16 +357,25 @@ export default function App() {
         </select>
 
         <div className="control-group">
-          <button
-            id="btn-play"
-            disabled={!currentSong || audio.isPlaying}
-            onClick={() => audio.startPlayback(currentSong)}
-          >
-            Play
-          </button>
+          {audio.isPlaying ? (
+            <button
+              id="btn-pause"
+              onClick={audio.pausePlayback}
+            >
+              Pause
+            </button>
+          ) : (
+            <button
+              id="btn-play"
+              disabled={!currentSong}
+              onClick={() => audio.startPlayback(currentSong)}
+            >
+              {audio.isPaused ? 'Resume' : 'Play'}
+            </button>
+          )}
           <button
             id="btn-stop"
-            disabled={!audio.isPlaying}
+            disabled={audio.playbackState === 'stopped'}
             onClick={audio.stopPlayback}
           >
             Stop
@@ -378,7 +433,7 @@ export default function App() {
         </div>
       </div>
 
-      <div id="song-display">
+      <div id="song-display" onClick={handleSongClick} onDoubleClick={handleSectionDoubleClick}>
         {renderSongContent(displaySong, audio.activeHighlight)}
       </div>
     </>

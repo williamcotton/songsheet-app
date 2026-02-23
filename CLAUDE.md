@@ -19,12 +19,12 @@ Single-page React 19 app that displays interactive songsheets with audio playbac
 
 ### Source Files
 
-- `src/App.tsx` — UI only: song selector, playback/transpose/BPM controls, and song rendering. Owns song state, Nashville toggle, and transpose logic. Delegates audio to `useAudioPlayback` and scrolling to `useAutoScroll`.
-- `src/audioEngine.ts` — Pure Tone.js `AudioEngine` class with no React dependency. Manages PolySynth/NoiseSynth creation, Transport scheduling, and playback lifecycle. Communicates back via a callbacks object (`onPositionChange`, `onPlaybackEnd`, `onMetronomeEnabledRead`).
-- `src/useAudioPlayback.ts` — React hook wrapping `AudioEngine`. Owns `isPlaying`, `metronomeEnabled`, `bpm`, and `activeHighlight` state. Handles ref-sync for stale closure prevention and Safari `visibilitychange` workaround.
+- `src/App.tsx` — UI only: song selector, playback/transpose/BPM controls, and song rendering. Owns song state, Nashville toggle, and transpose logic. Delegates audio to `useAudioPlayback` and scrolling to `useAutoScroll`. Handles click-to-seek (click a line to jump playback) and section vamp (double-click a section header to loop it).
+- `src/audioEngine.ts` — Pure Tone.js `AudioEngine` class with no React dependency. Manages PolySynth/NoiseSynth creation, Transport scheduling, and playback lifecycle. Communicates back via a callbacks object (`onPositionChange`, `onPlaybackEnd`, `onMetronomeEnabledRead`). Supports `pause()`/`resume()`, `seekTo(chordIndex)` for jumping to a position, and `setVamp()`/`clearVamp()` for Transport looping.
+- `src/useAudioPlayback.ts` — React hook wrapping `AudioEngine`. Owns `playbackState` (`PlaybackState`: `'stopped' | 'playing' | 'paused'`), `metronomeEnabled`, `bpm`, `activeHighlight`, and `vampSection` state. Derives `isPlaying`/`isPaused` booleans for convenience. Exposes `pausePlayback`, `seekTo(song, si, li)`, `toggleVamp(song, si)`, and `clearVamp` callbacks. Handles ref-sync for stale closure prevention and Safari `visibilitychange` workaround.
 - `src/useAutoScroll.ts` — Smooth-scroll hook using `requestAnimationFrame`. Starts/stops the scroll loop based on `isScrolling` prop. Exposes `scrollTo(target)` — the caller (App.tsx) computes DOM scroll targets.
-- `src/chordUtils.ts` — Pure utility functions: `chordToNotes()` (chord → MIDI note array for synth), `chordName()`, `expressionToString()`, and `collectAllChords()` which flattens the song's structure into an ordered `ChordPlaybackItem[]` for scheduling.
-- `src/types.ts` — TypeScript interfaces for the Song AST (`Song`, `StructureEntry`, `Line`, `Chord`, `Expression`, etc.) and app-specific types (`ActiveHighlight`, `ChordPlaybackItem`).
+- `src/chordUtils.ts` — Pure utility functions: `chordToNotes()` (chord → MIDI note array for synth), `chordName()`, `expressionToString()`, `collectAllChords()` which flattens the song's structure into an ordered `ChordPlaybackItem[]` for scheduling, `findChordIndex()` for click-to-seek position lookup, and `getChordRangeForSection()` for vamp loop range calculation.
+- `src/types.ts` — TypeScript interfaces for the Song AST (`Song`, `StructureEntry`, `Line`, `Chord`, `Expression`, etc.) and app-specific types (`ActiveHighlight`, `ChordPlaybackItem`, `PlaybackState`).
 - `src/main.tsx` — Entry point, renders `<App />` into `#root`.
 - `src/App.css` — All styles. Dark theme with accent color `#e94560`. Chord rows use monospace font with `white-space: pre` to preserve column alignment.
 
@@ -32,14 +32,17 @@ Single-page React 19 app that displays interactive songsheets with audio playbac
 
 1. User selects a song → `fetch('/songs/<name>.txt')` → `parse(text)` from the `songsheet` npm package → `Song` AST stored in state
 2. Transpose buttons call `transpose(song, offset)` from the library and replace the current song; `audio.reschedule()` re-schedules during playback
-3. Play button: `audio.startPlayback(song)` → `AudioEngine.start()` → `Tone.start()`, `initSynth()`, `scheduleSong()`, `Transport.start()`
-4. Each scheduled chord triggers `PolySynth.triggerAttackRelease()` and fires `onPositionChange` callback via `Tone.Draw` → React state update
-5. `useAutoScroll` runs a rAF loop while playing; App.tsx computes DOM scroll targets from `activeHighlight` and calls `scrollTo(target)`
+3. Play button: `audio.startPlayback(song)` → `AudioEngine.start()` → `Tone.start()`, `initSynth()`, `scheduleSong()`, `Transport.start()`; if paused, calls `engine.resume()` instead
+4. Pause button: `audio.pausePlayback()` → `Transport.pause()` + `synth.releaseAll()`; Resume resumes from paused position
+5. Click-to-seek: click a line → `audio.seekTo(song, si, li)` → finds chord index via `findChordIndex()` → `engine.seekTo()` sets `Transport.seconds`; if stopped, starts playback first
+6. Section vamp: double-click a section header → `audio.toggleVamp(song, si)` → computes chord range via `getChordRangeForSection()` → `engine.setVamp()` sets `Transport.loop`/`loopStart`/`loopEnd`
+7. Each scheduled chord triggers `PolySynth.triggerAttackRelease()` and fires `onPositionChange` callback via `Tone.Draw` → React state update
+8. `useAutoScroll` runs a rAF loop while playing; App.tsx computes DOM scroll targets from `activeHighlight` and calls `scrollTo(target)` (instant jump when paused)
 
 ### Key Patterns
 
 - **AudioEngine callbacks**: The engine is a plain class — it calls `onPositionChange`, `onPlaybackEnd`, and reads `onMetronomeEnabledRead()` instead of touching React state directly
-- **Refs for Tone.js callbacks**: `metronomeEnabledRef` and `isPlayingRef` in `useAudioPlayback` mirror state to avoid stale closures in Transport callbacks
+- **Refs for Tone.js callbacks**: `metronomeEnabledRef`, `playbackStateRef`, and `vampSectionRef` in `useAudioPlayback` mirror state to avoid stale closures in Transport callbacks
 - **Safari audio workaround**: `visibilitychange` listener in `useAudioPlayback` calls `engine.resumeContext()` to resume `AudioContext` and re-init synths
 - **Sticky controls**: `#controls` is `position: sticky; top: 0` — `controlsRef` measures its height for scroll offset calculations
 
