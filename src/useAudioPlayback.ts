@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { AudioEngine } from './audioEngine.ts'
+import type { AudioEngine } from './audioEngine.ts'
 import { collectAllChords, findChordIndex, getChordRangeForSection } from './chordUtils.ts'
 import type { Song, ActiveHighlight, PlaybackState } from './types'
 
@@ -32,20 +32,24 @@ export function useAudioPlayback() {
     setVampSection(null)
   }, [])
 
-  // Instantiate engine once
+  // Instantiate engine once (dynamic import keeps Tone.js out of SSR)
   useEffect(() => {
-    const engine = new AudioEngine({
-      onPositionChange: (pos) => setActiveHighlight(pos),
-      onPlaybackEnd: () => {
-        engineRef.current?.stop()
-        setActiveHighlight(null)
-        setPlaybackState('stopped')
-        setVampSection(null)
-      },
-      onMetronomeEnabledRead: () => metronomeEnabledRef.current,
+    let disposed = false
+    import('./audioEngine.ts').then(({ AudioEngine }) => {
+      if (disposed) return
+      const engine = new AudioEngine({
+        onPositionChange: (pos) => setActiveHighlight(pos),
+        onPlaybackEnd: () => {
+          engineRef.current?.stop()
+          setActiveHighlight(null)
+          setPlaybackState('stopped')
+          setVampSection(null)
+        },
+        onMetronomeEnabledRead: () => metronomeEnabledRef.current,
+      })
+      engineRef.current = engine
     })
-    engineRef.current = engine
-    return () => engine.dispose()
+    return () => { disposed = true; engineRef.current?.dispose() }
   }, [])
 
   // Safari AudioContext resume workaround
