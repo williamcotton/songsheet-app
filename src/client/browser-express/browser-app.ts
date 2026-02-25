@@ -11,12 +11,38 @@ export interface BrowserApp extends UniversalApp {
   destroy(): void;
 }
 
+type ScrollMode = 'preserve' | 'top' | 'restore';
+
+interface NavigationOptions {
+  scrollMode?: ScrollMode;
+  scrollPosition?: {
+    x: number;
+    y: number;
+  };
+}
+
 export function createBrowserApp(graphql: GraphQLExecutor): BrowserApp {
   const router = new Router();
   let root: Root | null = null;
   let cleanupInterceptor: (() => void) | null = null;
 
-  async function handleNavigation(path: string, method: string, body?: any) {
+  function applyScroll(options?: NavigationOptions) {
+    const mode = options?.scrollMode ?? 'preserve';
+    if (mode === 'preserve') return;
+
+    const target = mode === 'restore'
+      ? (options?.scrollPosition ?? { x: 0, y: 0 })
+      : { x: 0, y: 0 };
+
+    // Wait for React to commit and layout to settle before restoring.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        window.scrollTo(target.x, target.y);
+      });
+    });
+  }
+
+  async function handleNavigation(path: string, method: string, body?: any, options?: NavigationOptions) {
     if (!root) {
       console.warn('Navigation attempted before hydration completed');
       return;
@@ -34,6 +60,7 @@ export function createBrowserApp(graphql: GraphQLExecutor): BrowserApp {
 
     try {
       await matched.handler(req, res);
+      applyScroll(options);
     } catch (err) {
       console.error('Route error:', err);
     }

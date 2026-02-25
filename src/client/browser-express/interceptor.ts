@@ -1,8 +1,79 @@
-type NavigateHandler = (path: string, method: string, body?: any) => void;
+type ScrollMode = 'preserve' | 'top' | 'restore';
+
+interface ScrollPosition {
+  x: number;
+  y: number;
+}
+
+interface NavigateOptions {
+  scrollMode?: ScrollMode;
+  scrollPosition?: ScrollPosition;
+}
+
+type NavigateHandler = (path: string, method: string, body?: any, options?: NavigateOptions) => void;
+
+const SCROLL_STATE_KEY = '__browserExpressScroll';
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function readScrollFromState(state: unknown): ScrollPosition | null {
+  if (!isRecord(state)) return null;
+  const raw = state[SCROLL_STATE_KEY];
+  if (!isRecord(raw)) return null;
+
+  const x = typeof raw.x === 'number' ? raw.x : Number(raw.x);
+  const y = typeof raw.y === 'number' ? raw.y : Number(raw.y);
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+
+  return { x, y };
+}
+
+function currentState(): Record<string, unknown> {
+  return isRecord(window.history.state) ? window.history.state : {};
+}
+
+function stateWithScroll(scroll: ScrollPosition): Record<string, unknown> {
+  return {
+    ...currentState(),
+    [SCROLL_STATE_KEY]: scroll,
+  };
+}
 
 export function setupInterceptor(onNavigate: NavigateHandler): () => void {
   const controller = new AbortController();
   const { signal } = controller;
+  const previousScrollRestoration = window.history.scrollRestoration;
+
+  let scrollFrame: number | null = null;
+  let lastSavedX = Number.NaN;
+  let lastSavedY = Number.NaN;
+
+  function persistCurrentScroll() {
+    const x = window.scrollX;
+    const y = window.scrollY;
+    if (x === lastSavedX && y === lastSavedY) return;
+
+    lastSavedX = x;
+    lastSavedY = y;
+    window.history.replaceState(stateWithScroll({ x, y }), '', window.location.href);
+  }
+
+  function scheduleScrollPersist() {
+    if (scrollFrame !== null) return;
+    scrollFrame = window.requestAnimationFrame(() => {
+      scrollFrame = null;
+      persistCurrentScroll();
+    });
+  }
+
+  window.history.scrollRestoration = 'manual';
+  if (!readScrollFromState(window.history.state)) {
+    persistCurrentScroll();
+  }
+
+  window.addEventListener('scroll', scheduleScrollPersist, { signal, passive: true });
 
   // Intercept link clicks
   document.addEventListener('click', (e) => {
@@ -40,8 +111,10 @@ export function setupInterceptor(onNavigate: NavigateHandler): () => void {
     const routePath = `${url.pathname}${url.search}`;
     const historyPath = `${routePath}${url.hash}`;
     event.preventDefault();
-    window.history.pushState(null, '', historyPath);
-    onNavigate(routePath, 'GET');
+    persistCurrentScroll();
+    const nextState = { [SCROLL_STATE_KEY]: { x: 0, y: 0 } };
+    window.history.pushState(nextState, '', historyPath);
+    onNavigate(routePath, 'GET', undefined, { scrollMode: 'top' });
   }, { signal });
 
   // Intercept form submissions
@@ -81,17 +154,30 @@ export function setupInterceptor(onNavigate: NavigateHandler): () => void {
       const search = params.toString();
       const routePath = `${actionUrl.pathname}${search ? `?${search}` : ''}`;
       const historyPath = `${routePath}${actionUrl.hash}`;
-      window.history.pushState(null, '', historyPath);
-      onNavigate(routePath, 'GET');
+      persistCurrentScroll();
+      const nextState = { [SCROLL_STATE_KEY]: { x: 0, y: 0 } };
+      window.history.pushState(nextState, '', historyPath);
+      onNavigate(routePath, 'GET', undefined, { scrollMode: 'top' });
     } else {
       onNavigate(`${actionUrl.pathname}${actionUrl.search}`, method, body);
     }
   }, { signal });
 
   // Handle back/forward navigation
-  window.addEventListener('popstate', () => {
-    onNavigate(window.location.pathname + window.location.search, 'GET');
+  window.addEventListener('popstate', (event) => {
+    const scrollPosition = readScrollFromState(event.state) ?? readScrollFromState(window.history.state) ?? { x: 0, y: 0 };
+    onNavigate(window.location.pathname + window.location.search, 'GET', undefined, {
+      scrollMode: 'restore',
+      scrollPosition,
+    });
   }, { signal });
 
-  return () => controller.abort();
+  return () => {
+    if (scrollFrame !== null) {
+      window.cancelAnimationFrame(scrollFrame);
+      scrollFrame = null;
+    }
+    controller.abort();
+    window.history.scrollRestoration = previousScrollRestoration;
+  };
 }
