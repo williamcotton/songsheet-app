@@ -18,6 +18,8 @@ export interface AudioEngineCallbacks {
 export class AudioEngine {
   private static readonly CHORD_RELEASE_GAP_SECONDS = 0.8
   private static readonly MIN_CHORD_DURATION_SECONDS = 0.03
+  // Keep end callback just past the timeline boundary so vamping the final section can loop cleanly.
+  private static readonly END_OF_SONG_EPSILON_SECONDS = 0.001
   private synthRef: Tone.PolySynth | null = null
   private clickSynthRef: Tone.NoiseSynth | null = null
   private callbacks: AudioEngineCallbacks
@@ -138,8 +140,10 @@ export class AudioEngine {
     }
 
     // Schedule end-of-song stop
-    const endTime = measureDur * playback.length
+    const endTime = (measureDur * playback.length) + AudioEngine.END_OF_SONG_EPSILON_SECONDS
     Tone.getTransport().schedule(() => {
+      // When vamp is active we intentionally keep transport running.
+      if (Tone.getTransport().loop) return
       Tone.getDraw().schedule(() => {
         this.callbacks.onPlaybackEnd()
       }, Tone.now())
