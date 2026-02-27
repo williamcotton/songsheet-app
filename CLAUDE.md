@@ -5,63 +5,56 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Dev Commands
 
 ```bash
-npm run dev          # vite dev server (http://localhost:5173)
-npm run build        # production build to dist/
-npm run preview      # preview production build
+npm run dev          # dev server (Express + Vite middleware)
+npm run build        # client + server production build
+npm run start        # run production server
+npm run preview      # alias for production server
 npx tsc --noEmit     # type-check only (no output files)
 ```
 
-No linter or test runner is configured.
+No dedicated app test runner is configured.
 
 ## Architecture
 
-Single-page React 19 app that displays interactive songsheets with audio playback. No router — everything lives in one view.
+This app is a server-rendered React app (not a single-file SPA). `server.ts` hosts Express, GraphQL, and Vite/SSR rendering.
 
-### Source Files
+### Routing and Rendering
 
-- `src/App.tsx` — UI only: song selector, playback/transpose/BPM controls, and song rendering. Owns song state, Nashville toggle, and transpose logic. Delegates audio to `useAudioPlayback` and scrolling to `useAutoScroll`. Handles click-to-seek (click a line to jump playback) and section vamp (double-click a section header to loop it).
-- `src/audioEngine.ts` — Pure Tone.js `AudioEngine` class with no React dependency. Manages PolySynth/NoiseSynth creation, Transport scheduling, and playback lifecycle. Communicates back via a callbacks object (`onPositionChange`, `onPlaybackEnd`, `onMetronomeEnabledRead`). Supports `pause()`/`resume()`, `seekTo(chordIndex)` for jumping to a position, and `setVamp()`/`clearVamp()` for Transport looping.
-- `src/useAudioPlayback.ts` — React hook wrapping `AudioEngine`. Owns `playbackState` (`PlaybackState`: `'stopped' | 'playing' | 'paused'`), `metronomeEnabled`, `bpm`, `activeHighlight`, and `vampSection` state. Derives `isPlaying`/`isPaused` booleans for convenience. Exposes `pausePlayback`, `seekTo(song, si, li)`, `toggleVamp(song, si)`, and `clearVamp` callbacks. Handles ref-sync for stale closure prevention and Safari `visibilitychange` workaround.
-- `src/useAutoScroll.ts` — Smooth-scroll hook using `requestAnimationFrame`. Starts/stops the scroll loop based on `isScrolling` prop. Exposes `scrollTo(target)` — the caller (App.tsx) computes DOM scroll targets.
-- `src/chordUtils.ts` — Pure utility functions: `chordToNotes()` (chord → MIDI note array for synth), `chordName()`, `expressionToString()`, `collectAllChords()` which flattens the song's structure into an ordered `ChordPlaybackItem[]` for scheduling, `findChordIndex()` for click-to-seek position lookup, and `getChordRangeForSection()` for vamp loop range calculation.
-- `src/types.ts` — TypeScript interfaces for the Song AST (`Song`, `StructureEntry`, `Line`, `Chord`, `Expression`, etc.) and app-specific types (`ActiveHighlight`, `ChordPlaybackItem`, `PlaybackState`).
-- `src/main.tsx` — Entry point, renders `<App />` into `#root`.
-- `src/App.css` — All styles. Dark theme with accent color `#e94560`. Chord rows use monospace font with `white-space: pre` to preserve column alignment.
+- `src/shared/universal-app.tsx` registers routes for SSR page rendering.
+- `/songs` -> `src/components/pages/SongList.tsx`
+- `/songs/:id` -> `src/components/pages/SongDetail.tsx`
+- GraphQL data is loaded server-side and cached in the initial HTML payload.
 
-### Data Flow
+### Audio + Playback Stack
 
-1. User selects a song → `fetch('/songs/<name>.txt')` → `parse(text)` from the `songsheet` npm package → `Song` AST stored in state
-2. Transpose buttons call `transpose(song, offset)` from the library and replace the current song; `audio.reschedule()` re-schedules during playback
-3. Play button: `audio.startPlayback(song)` → `AudioEngine.start()` → `Tone.start()`, `initSynth()`, `scheduleSong()`, `Transport.start()`; if paused, calls `engine.resume()` instead
-4. Pause button: `audio.pausePlayback()` → `Transport.pause()` + `synth.releaseAll()`; Resume resumes from paused position
-5. Click-to-seek: click a line → `audio.seekTo(song, si, li)` → finds chord index via `findChordIndex()` → `engine.seekTo()` sets `Transport.seconds`; if stopped, starts playback first
-6. Section vamp: double-click a section header → `audio.toggleVamp(song, si)` → computes chord range via `getChordRangeForSection()` → `engine.setVamp()` sets `Transport.loop`/`loopStart`/`loopEnd`
-7. Each scheduled chord triggers `PolySynth.triggerAttackRelease()` and fires `onPositionChange` callback via `Tone.Draw` → React state update
-8. `useAutoScroll` runs a rAF loop while playing; App.tsx computes DOM scroll targets from `activeHighlight` and calls `scrollTo(target)` (instant jump when paused)
+- `src/components/pages/SongDetail.tsx` parses raw song text, manages transpose/NNS toggles, and wires click-to-seek + section vamp interactions.
+- `src/useAudioPlayback.ts` wraps engine lifecycle/state (`stopped`/`playing`/`paused`), owns `activeHighlight` and vamp state, and bridges callbacks into React state.
+- `src/audioEngine.ts` schedules playback from parser-produced `song.playback`, uses full time signature (`beats` + `value`) for timing, emits per-chord `onPositionChange` with `markerIndex`, and applies a release gap before chord end.
+- `src/components/SongRendering.tsx` renders chord/bar markers and applies active styles from `{ structureIndex, lineIndex, markerIndex }`.
 
-### Key Patterns
+### Supporting Files
 
-- **AudioEngine callbacks**: The engine is a plain class — it calls `onPositionChange`, `onPlaybackEnd`, and reads `onMetronomeEnabledRead()` instead of touching React state directly
-- **Refs for Tone.js callbacks**: `metronomeEnabledRef`, `playbackStateRef`, and `vampSectionRef` in `useAudioPlayback` mirror state to avoid stale closures in Transport callbacks
-- **Safari audio workaround**: `visibilitychange` listener in `useAudioPlayback` calls `engine.resumeContext()` to resume `AudioContext` and re-init synths
-- **Sticky controls**: `#controls` is `position: sticky; top: 0` — `controlsRef` measures its height for scroll offset calculations
+- `src/chordUtils.ts` — chord-to-note conversion, display formatting, measure lookup helpers (`findMeasureIndex`, `getMeasureRangeForSection`)
+- `src/types.ts` — app-local Song/Playback interfaces (including `PlaybackChord.markerIndex?`)
+- `src/useAutoScroll.ts` — scroll animation hook used during playback
+- `public/songs/*.txt` — song source files loaded by the server GraphQL data store
+
+## Data Flow
+
+1. Route `/songs/:id` resolves song text via GraphQL and SSR-renders `SongDetail`.
+2. `SongDetail` parses text into a `Song` object with `structure` and `playback`.
+3. Play triggers `AudioEngine.start(song, bpm)` and schedules Transport events from `song.playback`.
+4. Scheduled chord callbacks update highlight position by structure/line/marker index.
+5. Render layer highlights the active chord marker; click-to-seek maps line to measure index.
 
 ## Dependencies
 
-- **songsheet** (npm package) — Provides `parse()` and `transpose()`. Types come from the package's `index.d.ts`. The sibling `../songsheet/` directory is the source for this package but the app imports from the installed npm package, not a relative path.
-- **Tone.js v14** — Audio synthesis and transport scheduling. The `PolySynth` constructor requires a type cast (`as unknown as Partial<Tone.SynthOptions>`) because the v14 types don't expose `maxPolyphony`.
-- **React 19** with `@types/react@^19` and `@types/react-dom@^19`.
+- `songsheet` is installed from local file dependency (`"songsheet": "file:../songsheet"`), exposed in app code as `import ... from 'songsheet'`
+- Tone.js v14 powers synthesis/scheduling
+- React 19 + Vite 6 + TypeScript 5
 
-## TypeScript
+## TypeScript Notes
 
-- Strict mode, `moduleResolution: "bundler"`, `allowImportingTsExtensions`, `noEmit`
-- Source files use `.tsx`/`.ts` extensions in import paths (e.g., `from './App.tsx'`)
-- The `songsheet` package types resolve automatically because `index.d.ts` sits next to `index.js` in the package
-
-## Static Assets
-
-Song `.txt` files live in `public/songs/` and are fetched at runtime. The song list is hardcoded in `App.tsx` (`SONGS` array).
-
-## Vite Config
-
-`server.fs.allow: ['..']` permits access to the parent directory (historical — from when the app used relative imports to the sibling songsheet directory).
+- Strict mode enabled (`noEmit`, bundler module resolution)
+- Imports keep explicit `.ts`/`.tsx` extensions for local files
+- `AudioEngine` PolySynth options require a cast due Tone.js type limitations
