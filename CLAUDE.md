@@ -9,7 +9,7 @@ npm run dev          # dev server (Express + Vite middleware)
 npm run build        # client + server production build
 npm run start        # run production server
 npm run preview      # alias for production server
-npx tsc --noEmit     # type-check only (no output files)
+npm run typecheck    # type-check only (no output files)
 ```
 
 No dedicated app test runner is configured.
@@ -31,6 +31,7 @@ This app is a server-rendered React app (not a single-file SPA). `server.ts` hos
 - `src/useAudioPlayback.ts` wraps engine lifecycle/state (`stopped`/`playing`/`paused`), owns `activeHighlight` and vamp state, and bridges callbacks into React state.
 - `src/audioEngine.ts` schedules playback from parser-produced `song.playback`, uses full time signature (`beats` + `value`) for timing, emits per-chord `onPositionChange` with `markerIndex`, and applies a release gap before chord end.
 - `src/components/SongRendering.tsx` renders chord/bar markers and applies active styles from `{ structureIndex, lineIndex, markerIndex }`.
+- Measure semantics come from `songsheet`: only bracket syntax (`[A B ...]`) creates multi-chord measures; `|` repeats measures.
 
 ### Supporting Files
 
@@ -49,7 +50,7 @@ This app is a server-rendered React app (not a single-file SPA). `server.ts` hos
 
 ## Dependencies
 
-- `songsheet` is installed from local file dependency (`"songsheet": "file:../songsheet"`), exposed in app code as `import ... from 'songsheet'`
+- `songsheet` is consumed as the `songsheet` package (this workspace often has it symlinked to `../songsheet` during local development)
 - Tone.js v14 powers synthesis/scheduling
 - React 19 + Vite 6 + TypeScript 5
 
