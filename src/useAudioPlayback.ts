@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import type { AudioEngine } from './audioEngine.ts'
-import { collectAllChords, findChordIndex, getChordRangeForSection } from './chordUtils.ts'
+import { findMeasureIndex, getMeasureRangeForSection } from './chordUtils.ts'
 import type { Song, ActiveHighlight, PlaybackState } from './types'
 
 export function useAudioPlayback() {
@@ -86,15 +86,14 @@ export function useAudioPlayback() {
   }, [doStopPlayback])
 
   const seekTo = useCallback(async (song: Song, structureIndex: number, lineIndex: number) => {
-    const allChords = collectAllChords(song)
-    const chordIndex = findChordIndex(allChords, structureIndex, lineIndex)
-    if (chordIndex < 0) return
+    const measureIdx = findMeasureIndex(song.playback, structureIndex, lineIndex)
+    if (measureIdx < 0) return
 
     if (playbackStateRef.current === 'stopped') {
       await engineRef.current?.start(song, bpm)
       setPlaybackState('playing')
     }
-    engineRef.current?.seekTo(chordIndex)
+    engineRef.current?.seekTo(measureIdx)
   }, [bpm])
 
   const toggleVamp = useCallback((song: Song, structureIndex: number) => {
@@ -103,8 +102,7 @@ export function useAudioPlayback() {
       setVampSection(null)
       return
     }
-    const allChords = collectAllChords(song)
-    const range = getChordRangeForSection(allChords, structureIndex)
+    const range = getMeasureRangeForSection(song.playback, structureIndex)
     if (!range) return
     engineRef.current?.setVamp(range.start, range.end)
     setVampSection(structureIndex)
@@ -130,8 +128,8 @@ export function useAudioPlayback() {
     }
   }, [])
 
-  const setTimeSignature = useCallback((beats: number) => {
-    engineRef.current?.setTimeSignature(beats)
+  const setTimeSignature = useCallback((beats: number, value: number = 4) => {
+    engineRef.current?.setTimeSignature(beats, value)
   }, [])
 
   return {

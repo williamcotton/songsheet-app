@@ -1,7 +1,7 @@
 import * as Tone from 'tone'
 import { toStandard } from 'songsheet'
-import { chordToNotes, collectAllChords } from './chordUtils.ts'
-import type { Song } from './types'
+import { chordToNotes } from './chordUtils.ts'
+import type { Song, TimeSignature } from './types'
 
 export interface PlaybackPosition {
   structureIndex: number
@@ -16,6 +16,8 @@ export interface AudioEngineCallbacks {
 }
 
 export class AudioEngine {
+  private static readonly CHORD_RELEASE_GAP_SECONDS = 0.8
+  private static readonly MIN_CHORD_DURATION_SECONDS = 0.03
   private synthRef: Tone.PolySynth | null = null
   private clickSynthRef: Tone.NoiseSynth | null = null
   private callbacks: AudioEngineCallbacks
@@ -48,6 +50,26 @@ export class AudioEngine {
     this.clickSynthRef.toDestination()
   }
 
+  private getSongTimeSignature(song: Song): TimeSignature {
+    return song.timeSignature || { beats: 4, value: 4 }
+  }
+
+  private getBeatDurationSeconds(timeSignature: TimeSignature): number {
+    const quarterNoteDur = 60 / Tone.getTransport().bpm.value
+    return quarterNoteDur * (4 / timeSignature.value)
+  }
+
+  private getMeasureDurationSeconds(timeSignature: TimeSignature): number {
+    return this.getBeatDurationSeconds(timeSignature) * timeSignature.beats
+  }
+
+  private withReleaseGap(durationSeconds: number): number {
+    return Math.max(
+      AudioEngine.MIN_CHORD_DURATION_SECONDS,
+      durationSeconds - AudioEngine.CHORD_RELEASE_GAP_SECONDS
+    )
+  }
+
   scheduleSong(song: Song) {
     this.currentSong = song
     Tone.getTransport().cancel()
@@ -58,53 +80,65 @@ export class AudioEngine {
       playbackSong = toStandard(song, song.key)
     }
 
-    const allChords = collectAllChords(playbackSong)
-    if (allChords.length === 0) return
+    const playback = playbackSong.playback
+    if (!playback || playback.length === 0) return
 
-    const measureDur = Tone.Time('1m').toSeconds()
+    const timeSignature = this.getSongTimeSignature(song)
+    const measureDur = this.getMeasureDurationSeconds(timeSignature)
     this.measureDur = measureDur
-    const beatDur = Tone.Time('4n').toSeconds()
-    const eighthNoteDur = beatDur / 2
 
-    allChords.forEach((item, i) => {
-      const time = measureDur * i
+    for (const measure of playback) {
+      const measureStart = measureDur * measure.measureIndex
+      const beatDur = measureDur / measure.timeSignature.beats
+      const eighthNoteDur = beatDur / 2
 
-      // Push chords are anticipated — sound an eighth note before the downbeat
-      const chordTime = item.chord.push && time >= eighthNoteDur
-        ? time - eighthNoteDur
-        : time
+      for (const chord of measure.chords) {
+        const chordTime = measureStart + chord.beatStart * beatDur
 
-      Tone.getTransport().schedule(t => {
-        const notes = chordToNotes(item.chord)
-        if (notes && this.synthRef) {
-          this.synthRef.triggerAttackRelease(notes, '2n', t)
+        // Push chords: sound an eighth note early
+        const soundTime = chord.push && chordTime >= eighthNoteDur
+          ? chordTime - eighthNoteDur
+          : chordTime
+
+        // Determine note duration
+        let noteDur: string | number = this.withReleaseGap(chord.durationInBeats * beatDur)
+        if (chord.diamond) {
+          noteDur = this.withReleaseGap(measureDur)
+        } else if (chord.stop) {
+          noteDur = '16n'  // short staccato
         }
-      }, chordTime)
 
-      // Highlight stays on the grid beat (not pushed early)
-      Tone.getTransport().schedule(t => {
-        Tone.getDraw().schedule(() => {
-          this.callbacks.onPositionChange({
-            structureIndex: item.structureIndex,
-            lineIndex: item.lineIndex,
-            markerIndex: item.markerIndex,
-          })
-        }, t)
-      }, time)
+        Tone.getTransport().schedule(t => {
+          const notes = chordToNotes(chord)
+          if (notes && this.synthRef) {
+            this.synthRef.triggerAttackRelease(notes, noteDur, t)
+          }
+        }, soundTime)
+
+        Tone.getTransport().schedule(t => {
+          Tone.getDraw().schedule(() => {
+            this.callbacks.onPositionChange({
+              structureIndex: measure.structureIndex,
+              lineIndex: measure.lineIndex,
+              markerIndex: chord.markerIndex ?? 0,
+            })
+          }, t)
+        }, soundTime)
+      }
 
       // Metronome: click on each beat of the measure
-      const beatsInMeasure = Tone.getTransport().timeSignature as number
+      const beatsInMeasure = measure.timeSignature.beats
       for (let beat = 0; beat < beatsInMeasure; beat++) {
         Tone.getTransport().schedule(t => {
           if (this.callbacks.onMetronomeEnabledRead() && this.clickSynthRef) {
             this.clickSynthRef.triggerAttackRelease('32n', t)
           }
-        }, time + beatDur * beat)
+        }, measureStart + beatDur * beat)
       }
-    })
+    }
 
     // Schedule end-of-song stop
-    const endTime = Tone.Time('1m').toSeconds() * allChords.length
+    const endTime = measureDur * playback.length
     Tone.getTransport().schedule(() => {
       Tone.getDraw().schedule(() => {
         this.callbacks.onPlaybackEnd()
@@ -121,7 +155,8 @@ export class AudioEngine {
     }
     this.initSynth()
     Tone.getTransport().bpm.value = bpm
-    Tone.getTransport().timeSignature = song.timeSignature ? song.timeSignature.beats : 4
+    const timeSignature = song.timeSignature
+    Tone.getTransport().timeSignature = timeSignature ? [timeSignature.beats, timeSignature.value] : 4
     Tone.getTransport().position = 0
     this.scheduleSong(song)
     Tone.getTransport().start()
@@ -143,8 +178,8 @@ export class AudioEngine {
     Tone.getTransport().bpm.value = bpm
   }
 
-  setTimeSignature(beats: number) {
-    Tone.getTransport().timeSignature = beats
+  setTimeSignature(beats: number, value: number = 4) {
+    Tone.getTransport().timeSignature = value === 4 ? beats : [beats, value]
   }
 
   pause() {

@@ -28,7 +28,10 @@ export function SongDetail({ rawText, songId }: { rawText: string; songId: strin
     setNashvilleMode(false);
     if (audio.playbackState !== 'stopped') audio.stopPlayback();
     if (newSong.bpm) audio.setBpm(newSong.bpm);
-    audio.setTimeSignature(newSong.timeSignature ? newSong.timeSignature.beats : 4);
+    audio.setTimeSignature(
+      newSong.timeSignature ? newSong.timeSignature.beats : 4,
+      newSong.timeSignature ? newSong.timeSignature.value : 4,
+    );
   }, [rawText, songId]);
 
   // Derive displaySong: applies Nashville conversion for rendering

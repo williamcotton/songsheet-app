@@ -61,6 +61,27 @@ export interface TimeSignature {
   value: number
 }
 
+export interface PlaybackChord {
+  root: string
+  type: string
+  bass?: string
+  nashville?: boolean
+  diamond?: boolean
+  push?: boolean
+  stop?: boolean
+  markerIndex?: number
+  beatStart: number
+  durationInBeats: number
+}
+
+export interface PlaybackMeasure {
+  measureIndex: number
+  structureIndex: number
+  lineIndex: number
+  timeSignature: TimeSignature
+  chords: PlaybackChord[]
+}
+
 export interface Song {
   title: string
   author: string
@@ -69,6 +90,7 @@ export interface Song {
   key: string | null
   sections: Record<string, Section>
   structure: StructureEntry[]
+  playback: PlaybackMeasure[]
 }
 
 // App-specific
