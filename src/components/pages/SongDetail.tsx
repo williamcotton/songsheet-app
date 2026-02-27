@@ -16,7 +16,7 @@ export function SongDetail({ rawText, songId }: { rawText: string; songId: strin
 
   const controlsRef = useRef<HTMLDivElement>(null);
 
-  const audio = useAudioPlayback(parsedSong.bpm ?? 72);
+  const audio = useAudioPlayback({ initialBpm: parsedSong.bpm ?? 72 });
   const { scrollTo } = useAutoScroll({ isScrolling: audio.isPlaying });
 
   // When rawText/songId changes, reset state
