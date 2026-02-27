@@ -3,10 +3,10 @@ import type { AudioEngine } from './audioEngine.ts'
 import { findMeasureIndex, getMeasureRangeForSection } from './chordUtils.ts'
 import type { Song, ActiveHighlight, PlaybackState } from './types'
 
-export function useAudioPlayback() {
+export function useAudioPlayback(initialBpm: number = 72) {
   const [playbackState, setPlaybackState] = useState<PlaybackState>('stopped')
   const [metronomeEnabled, setMetronomeEnabled] = useState(true)
-  const [bpm, setBpm] = useState(72)
+  const [bpm, setBpm] = useState(initialBpm)
   const [activeHighlight, setActiveHighlight] = useState<ActiveHighlight | null>(null)
   const [vampSection, setVampSection] = useState<number | null>(null)
 
