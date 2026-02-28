@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { parse, transpose, toNashville, toStandard } from 'songsheet';
+import type { Song } from 'songsheet';
 import { useAudioPlayback } from '../../useAudioPlayback.ts';
 import { useAutoScroll } from '../../useAutoScroll.ts';
 import { renderSongContent } from '../SongRendering.tsx';
 import { Layout } from '../Layout.tsx';
-import type { Song } from '../../types.ts';
 
 export function SongDetail({ rawText, songId }: { rawText: string; songId: string }) {
   const parsedSong = useMemo(() => parse(rawText), [rawText]);

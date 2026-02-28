@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
+import type { Song } from 'songsheet'
 import type { AudioEngine } from './audioEngine.ts'
 import { findMeasureIndex, getMeasureRangeForSection } from './chordUtils.ts'
-import type { Song, ActiveHighlight, PlaybackState } from './types'
+import type { ActiveHighlight, PlaybackState } from './types'
 
 export function useAudioPlayback({ initialBpm = 72 }: { initialBpm?: number } = {}) {
   const [playbackState, setPlaybackState] = useState<PlaybackState>('stopped')

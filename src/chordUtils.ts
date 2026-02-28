@@ -1,4 +1,5 @@
-import type { Chord, BarLine, Expression, Song, ChordPlaybackItem, PlaybackMeasure } from './types'
+import type { Song, Chord, BarLine, Expression, PlaybackMeasure } from 'songsheet'
+import type { ChordPlaybackItem } from './types'
 
 const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
 const NOTE_TO_SEMITONE: Record<string, number> = {}

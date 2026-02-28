@@ -1,7 +1,7 @@
 import * as Tone from 'tone'
 import { toStandard } from 'songsheet'
 import { chordToNotes } from './chordUtils.ts'
-import type { Song, TimeSignature } from './types'
+import type { Song, TimeSignature } from 'songsheet'
 
 export interface PlaybackPosition {
   structureIndex: number

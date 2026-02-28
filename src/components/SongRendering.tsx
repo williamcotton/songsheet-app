@@ -1,4 +1,5 @@
-import type { Song, Line, Chord, ActiveHighlight } from '../types.ts';
+import type { Song, Line, Chord } from 'songsheet';
+import type { ActiveHighlight } from '../types.ts';
 import { chordName, chordDisplayText, expressionToString } from '../chordUtils.ts';
 
 export function renderChordMarker(chord: Chord, si: number, li: number, mi: number, highlight: ActiveHighlight | null): React.ReactNode {
