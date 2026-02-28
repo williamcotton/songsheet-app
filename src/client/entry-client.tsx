@@ -7,3 +7,17 @@ const app = createBrowserApp(executor);
 
 registerRoutes(app);
 app.start();
+
+const hot = (import.meta as ImportMeta & {
+  hot?: {
+    accept: () => void;
+    dispose: (cb: () => void) => void;
+  };
+}).hot;
+
+if (hot) {
+  hot.accept();
+  hot.dispose(() => {
+    app.destroy();
+  });
+}

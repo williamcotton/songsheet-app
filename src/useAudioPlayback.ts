@@ -53,28 +53,77 @@ export function useAudioPlayback({ initialBpm = 72 }: { initialBpm?: number } = 
     return () => { disposed = true; engineRef.current?.dispose() }
   }, [])
 
-  // Safari AudioContext resume workaround
+  const recoverPlaybackIfNeeded = useCallback(async (): Promise<boolean> => {
+    try {
+      return (await engineRef.current?.resumeContext(playbackStateRef.current === 'playing')) ?? false
+    } catch {
+      // Safari may reject resume attempts until foreground/user-gesture; retry on next signal.
+      return false
+    }
+  }, [])
+
+  // Safari interruption recovery
   useEffect(() => {
-    async function handleVisibilityChange() {
+    function handleVisibilityChange() {
       if (document.visibilityState === 'visible') {
-        await engineRef.current?.resumeContext(playbackStateRef.current === 'playing')
+        void recoverPlaybackIfNeeded()
       }
     }
+    function handlePageShow() {
+      void recoverPlaybackIfNeeded()
+    }
+    function handleFocus() {
+      void recoverPlaybackIfNeeded()
+    }
     document.addEventListener('visibilitychange', handleVisibilityChange)
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
-  }, [])
+    window.addEventListener('pageshow', handlePageShow)
+    window.addEventListener('focus', handleFocus)
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('pageshow', handlePageShow)
+      window.removeEventListener('focus', handleFocus)
+    }
+  }, [recoverPlaybackIfNeeded])
+
+  // Safari often needs an explicit user gesture after interruption before audio can resume.
+  useEffect(() => {
+    function handleUserGesture() {
+      void recoverPlaybackIfNeeded()
+    }
+    document.addEventListener('pointerdown', handleUserGesture)
+    document.addEventListener('touchstart', handleUserGesture)
+    document.addEventListener('keydown', handleUserGesture)
+    return () => {
+      document.removeEventListener('pointerdown', handleUserGesture)
+      document.removeEventListener('touchstart', handleUserGesture)
+      document.removeEventListener('keydown', handleUserGesture)
+    }
+  }, [recoverPlaybackIfNeeded])
+
+  // While playing, poll occasionally so Safari context/transport interruptions self-heal.
+  useEffect(() => {
+    if (playbackState !== 'playing') return
+    const intervalId = window.setInterval(() => {
+      void recoverPlaybackIfNeeded()
+    }, 3000)
+    return () => window.clearInterval(intervalId)
+  }, [playbackState, recoverPlaybackIfNeeded])
 
   const startPlayback = useCallback(async (song: Song | null) => {
     if (!song) return
     if (playbackStateRef.current === 'paused') {
-      engineRef.current?.resume()
+      const recovered = await recoverPlaybackIfNeeded()
+      if (!recovered) return
+      const resumed = await engineRef.current?.resume()
+      if (!resumed) return
       setPlaybackState('playing')
       return
     }
     if (playbackStateRef.current === 'playing') return
-    await engineRef.current?.start(song, bpm)
+    const started = await engineRef.current?.start(song, bpm)
+    if (!started) return
     setPlaybackState('playing')
-  }, [bpm])
+  }, [bpm, recoverPlaybackIfNeeded])
 
   const pausePlayback = useCallback(() => {
     if (playbackStateRef.current !== 'playing') return
@@ -91,7 +140,8 @@ export function useAudioPlayback({ initialBpm = 72 }: { initialBpm?: number } = 
     if (measureIdx < 0) return
 
     if (playbackStateRef.current === 'stopped') {
-      await engineRef.current?.start(song, bpm)
+      const started = await engineRef.current?.start(song, bpm)
+      if (!started) return
       setPlaybackState('playing')
     }
     engineRef.current?.seekTo(measureIdx)

@@ -72,6 +72,58 @@ export class AudioEngine {
     )
   }
 
+  private isRecoverableContextState(state: AudioContextState | string): boolean {
+    return state === 'suspended' || state === 'interrupted'
+  }
+
+  private resetToneContext(): boolean {
+    const globalWithWebkit = globalThis as typeof globalThis & {
+      webkitAudioContext?: typeof AudioContext
+    }
+    const AudioContextCtor = globalWithWebkit.AudioContext || globalWithWebkit.webkitAudioContext
+    if (!AudioContextCtor) return false
+    try {
+      const nextRawContext = new AudioContextCtor()
+      Tone.setContext(new Tone.Context(nextRawContext), true)
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  private async ensureContextRunning(): Promise<boolean> {
+    let ctx = Tone.getContext().rawContext
+    if (!ctx) return true
+    let currentState = ctx.state as AudioContextState | string
+
+    // Safari can leave Tone bound to a closed context during reload/HMR or interruptions.
+    if (currentState === 'closed') {
+      const reset = this.resetToneContext()
+      if (!reset) return false
+      ctx = Tone.getContext().rawContext
+      if (!ctx) return false
+      currentState = ctx.state as AudioContextState | string
+      // Fresh context means previously created nodes are stale.
+      this.synthRef = null
+      this.clickSynthRef = null
+    }
+
+    if (currentState === 'running') return true
+    if (!this.isRecoverableContextState(currentState)) return false
+    try {
+      await Tone.start()
+      await ctx.resume()
+    } catch {
+      return false
+    }
+    return (ctx.state as AudioContextState | string) === 'running'
+  }
+
+  private getSongDurationSeconds(): number {
+    if (!this.currentSong?.playback?.length || this.measureDur <= 0) return 0
+    return this.measureDur * this.currentSong.playback.length
+  }
+
   scheduleSong(song: Song) {
     this.currentSong = song
     Tone.getTransport().cancel()
@@ -150,13 +202,14 @@ export class AudioEngine {
     }, endTime)
   }
 
-  async start(song: Song, bpm: number) {
-    await Tone.start()
-    // Safari: explicitly resume raw context as fallback
-    const ctx = Tone.getContext().rawContext
-    if (ctx && ctx.state === 'suspended') {
-      await ctx.resume()
+  async start(song: Song, bpm: number): Promise<boolean> {
+    try {
+      await Tone.start()
+    } catch {
+      return false
     }
+    const running = await this.ensureContextRunning()
+    if (!running) return false
     this.initSynth()
     Tone.getTransport().bpm.value = bpm
     const timeSignature = song.timeSignature
@@ -164,6 +217,7 @@ export class AudioEngine {
     Tone.getTransport().position = 0
     this.scheduleSong(song)
     Tone.getTransport().start()
+    return true
   }
 
   stop() {
@@ -191,8 +245,11 @@ export class AudioEngine {
     if (this.synthRef) this.synthRef.releaseAll()
   }
 
-  resume() {
+  async resume(): Promise<boolean> {
+    const running = await this.ensureContextRunning()
+    if (!running) return false
     Tone.getTransport().start()
+    return true
   }
 
   seekTo(chordIndex: number) {
@@ -213,15 +270,32 @@ export class AudioEngine {
     Tone.getTransport().loop = false
   }
 
-  async resumeContext(isPlaying: boolean) {
-    const ctx = Tone.getContext().rawContext
-    if (ctx && ctx.state === 'suspended') {
-      await ctx.resume()
-    }
-    // Safari can invalidate synth nodes after suspension — re-init if playing
-    if (isPlaying) {
+  async resumeContext(isPlaying: boolean): Promise<boolean> {
+    const transport = Tone.getTransport()
+    const contextStateBefore = Tone.getContext().rawContext?.state as AudioContextState | string | undefined
+    const contextWasInterrupted = !!contextStateBefore && this.isRecoverableContextState(contextStateBefore)
+    const songDuration = this.getSongDurationSeconds()
+    const resumeSeconds = Math.max(
+      0,
+      songDuration > 0 ? Math.min(transport.seconds, Math.max(0, songDuration - AudioEngine.END_OF_SONG_EPSILON_SECONDS)) : transport.seconds
+    )
+    const running = await this.ensureContextRunning()
+    if (!running) return false
+    if (!isPlaying) return true
+
+    const transportNeedsRestart = transport.state !== 'started'
+    if (!contextWasInterrupted && !transportNeedsRestart) return true
+
+    // Safari can invalidate synth nodes or timeline scheduling after interruption.
+    if (this.currentSong) {
       this.initSynth()
+      this.scheduleSong(this.currentSong)
+      transport.seconds = resumeSeconds
     }
+    if (transport.state !== 'started') {
+      transport.start()
+    }
+    return true
   }
 
   dispose() {
