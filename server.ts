@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
@@ -10,6 +11,7 @@ const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
 async function createServer() {
   const app = express();
+  const httpServer = http.createServer(app);
   app.use(compression());
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
@@ -32,7 +34,10 @@ async function createServer() {
   if (!isProd) {
     const { createServer: createViteServer } = await import('vite');
     vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: {
+        middlewareMode: true,
+        hmr: { server: httpServer },
+      },
       appType: 'custom',
     });
     app.use(vite.middlewares);
@@ -96,7 +101,7 @@ async function createServer() {
     }
   });
 
-  app.listen(port, () => {
+  httpServer.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`);
   });
 }
