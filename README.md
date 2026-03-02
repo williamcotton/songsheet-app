@@ -145,14 +145,6 @@ That parsed structure drives the full rendered detail page and playback timeline
 
 In this file, syntax and semantics map directly onto behavior: the `Title - Author` header defines metadata, `(156 bpm, 3/4 time)` configures transport defaults, chord placement is column-sensitive against lyric text, `|` encodes measure boundaries, and labels like `CHORUS:` become explicit structural entries that both rendering and playback consume.
 
-## Regenerate README Screenshots
-
-```bash
-npm run test:e2e -- e2e/readme-screenshots.spec.ts
-```
-
-Artifacts are written to `screenshots/`.
-
 ## Development Commands
 
 | Command | Description |
@@ -166,6 +158,8 @@ Artifacts are written to `screenshots/`.
 | `npm run test:watch` | Vitest in watch mode |
 | `npm run test:ui` | Vitest browser UI |
 | `npm run test:e2e` | Run Playwright E2E tests |
+| `npm run test:e2e:readme-screenshots` | Run just the README screenshot tests |
+| `npm run refresh:readme-screenshots` | Clear and regenerate README screenshots |
 
 ## Project Map
 
