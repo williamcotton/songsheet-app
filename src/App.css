@@ -100,7 +100,7 @@ body {
   z-index: 10;
   background: #16213e;
   border-bottom: 1px solid #0f3460;
-  padding: 12px 20px;
+  padding: 12px max(20px, calc((100% - 900px) / 2));
   display: flex;
   align-items: center;
   gap: 16px;
@@ -329,7 +329,7 @@ input[type="range"] {
 }
 
 .edit-left {
-  width: 50%;
+  width: 45%;
   display: flex;
   flex-direction: column;
   border-right: 1px solid #0f3460;
@@ -355,16 +355,24 @@ input[type="range"] {
   tab-size: 2;
 }
 
-.edit-toolbar {
+.edit-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
+  justify-content: space-between;
+  padding: 13px 16px;
   background: #16213e;
-  border-top: 1px solid #0f3460;
+  border-bottom: 1px solid #0f3460;
 }
 
-.edit-toolbar button[type="submit"] {
+.edit-header-label {
+  font-size: 13px;
+  color: #a0a0c0;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.edit-header button[type="submit"] {
   background: #e94560;
   color: #fff;
   font-weight: 600;
@@ -374,18 +382,19 @@ input[type="range"] {
   cursor: pointer;
 }
 
-.edit-toolbar button[type="submit"]:hover {
+.edit-header button[type="submit"]:hover {
   background: #d63a54;
 }
 
 .edit-right {
-  width: 50%;
+  width: 55%;
   overflow-y: auto;
 }
 
 .edit-right #controls {
   position: sticky;
   top: 0;
+  padding: 12px 20px;
 }
 
 .edit-right #song-display {

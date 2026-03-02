@@ -16,6 +16,10 @@ export function SongEdit({ rawText, songId }: { rawText: string; songId: string 
       <div className="edit-container">
         <div className="edit-left">
           <form method="POST">
+            <div className="edit-header">
+              <span className="edit-header-label">Source</span>
+              <button type="submit">Save</button>
+            </div>
             <textarea
               className="edit-textarea"
               name="rawText"
@@ -23,9 +27,6 @@ export function SongEdit({ rawText, songId }: { rawText: string; songId: string 
               onChange={e => setEditText(e.target.value)}
               spellCheck={false}
             />
-            <div className="edit-toolbar">
-              <button type="submit">Save</button>
-            </div>
           </form>
         </div>
 
