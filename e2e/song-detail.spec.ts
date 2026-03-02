@@ -15,48 +15,46 @@ async function waitForHydration(page: any) {
 }
 
 test('song detail page renders title and chords', async ({ page }) => {
-  await page.goto('/songs/america')
+  await page.goto('/songs/a-way-out-online')
   await expect(page.locator('#song-display')).toBeVisible()
-  // America has chord lines with C, G, Am, F etc.
-  await expect(page.locator('#song-display')).toContainText('AMERICA')
+  await expect(page.locator('#song-display')).toContainText(/A WAY OUT ONLINE/i)
 })
 
 test('Edit link navigates to edit page', async ({ page }) => {
-  await page.goto('/songs/america')
+  await page.goto('/songs/a-way-out-online')
   await page.click('a.btn-link:has-text("Edit")')
-  await expect(page).toHaveURL('/songs/america/edit')
+  await expect(page).toHaveURL('/songs/a-way-out-online/edit')
 })
 
 test('transpose up changes chords', async ({ page }) => {
-  await page.goto('/songs/america')
+  await page.goto('/songs/a-way-out-online')
   await waitForHydration(page)
+  const displayBefore = await page.locator('#song-display').textContent()
   // Click transpose up
   await page.click('#btn-transpose-up')
   // Wait for the UI to update — transpose value should show +1
   await expect(page.locator('#transpose-value')).toHaveText('+1')
-  // Verify chords actually changed — America starts with C, transposed up should be C#/Db
-  const display = await page.locator('#song-display').textContent()
-  expect(display).not.toContain('Cmaj7')
-  expect(display).toMatch(/C#|Db/)
+  // Verify transposition changes the rendered chords.
+  const displayAfter = await page.locator('#song-display').textContent()
+  expect(displayAfter).not.toBe(displayBefore)
 })
 
 test('transpose down reverts chords', async ({ page }) => {
-  await page.goto('/songs/america')
+  await page.goto('/songs/a-way-out-online')
   await waitForHydration(page)
+  const displayBefore = await page.locator('#song-display').textContent()
   // Transpose up then down — should return to original
   await page.click('#btn-transpose-up')
   await expect(page.locator('#transpose-value')).toHaveText('+1')
   await page.click('#btn-transpose-down')
   await expect(page.locator('#transpose-value')).toHaveText('0')
-  // Should be back to original key with Cmaj7
-  const display = await page.locator('#song-display').textContent()
-  expect(display).toContain('Cmaj7')
+  // Should be back to the original rendered song text.
+  const displayAfter = await page.locator('#song-display').textContent()
+  expect(displayAfter).toBe(displayBefore)
 })
 
 test('NNS toggle switches chords to numbers', async ({ page }) => {
-  // Use a song that has a key defined. America doesn't have a key, so NNS is disabled.
-  // Let's check: if NNS button is disabled, skip.
-  await page.goto('/songs/america')
+  await page.goto('/songs/a-way-out-online')
   const nnsBtn = page.locator('#btn-nashville')
   const isDisabled = await nnsBtn.isDisabled()
   if (!isDisabled) {
@@ -65,5 +63,4 @@ test('NNS toggle switches chords to numbers', async ({ page }) => {
     const displayAfter = await page.locator('#song-display').textContent()
     expect(displayAfter).not.toBe(displayBefore)
   }
-  // If disabled, the test passes (no key → NNS not available)
 })

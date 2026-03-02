@@ -9,19 +9,18 @@ async function waitForHydration(page: any) {
 }
 
 test('edit page shows textarea and preview', async ({ page }) => {
-  await page.goto('/songs/america/edit')
+  await page.goto('/songs/a-way-out-online/edit')
   await expect(page.locator('.edit-textarea')).toBeVisible()
   await expect(page.locator('.edit-right')).toBeVisible()
 })
 
 test('typing in textarea updates preview', async ({ page }) => {
-  await page.goto('/songs/america/edit')
+  await page.goto('/songs/a-way-out-online/edit')
   await waitForHydration(page)
   const textarea = page.locator('.edit-textarea')
   const preview = page.locator('.edit-right #song-display')
 
-  // Verify initial content is the America song
-  await expect(preview).toContainText('AMERICA')
+  await expect(preview).toContainText(/A WAY OUT ONLINE/i)
 
   // Use evaluate to set value via React's native value setter, which triggers onChange
   await textarea.evaluate((el: HTMLTextAreaElement) => {
@@ -37,7 +36,7 @@ test('typing in textarea updates preview', async ({ page }) => {
 })
 
 test('save submits form and reloads', async ({ page }) => {
-  await page.goto('/songs/america/edit')
+  await page.goto('/songs/a-way-out-online/edit')
   const textarea = page.locator('.edit-textarea')
 
   // Read original text to restore later
@@ -47,7 +46,7 @@ test('save submits form and reloads', async ({ page }) => {
   await page.click('button[type="submit"]')
 
   // Should redirect back to the edit page
-  await expect(page).toHaveURL('/songs/america/edit')
+  await expect(page).toHaveURL('/songs/a-way-out-online/edit')
   await expect(textarea).toBeVisible()
 
   // Verify content is preserved after save

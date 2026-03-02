@@ -77,5 +77,19 @@ describe('createDataStore', () => {
       const result = await store.updateSong('nonexistent', 'text')
       expect(result).toBeNull()
     })
+
+    it('normalizes CRLF line endings to LF when saving', async () => {
+      const store = createDataStore(tmpDir)
+      const crlfText = 'UPDATED TITLE - NEW AUTHOR\r\n\r\nG  D\r\nNew lyrics\r\n'
+      const result = await store.updateSong('my-song', crlfText)
+
+      expect(result).not.toBeNull()
+      expect(result!.rawText).toBe('UPDATED TITLE - NEW AUTHOR\n\nG  D\nNew lyrics\n')
+      expect(result!.rawText).not.toContain('\r')
+
+      const onDisk = fs.readFileSync(path.join(tmpDir, 'my-song.txt'), 'utf-8')
+      expect(onDisk).toBe('UPDATED TITLE - NEW AUTHOR\n\nG  D\nNew lyrics\n')
+      expect(onDisk).not.toContain('\r')
+    })
   })
 })

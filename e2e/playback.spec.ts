@@ -25,7 +25,7 @@ async function gotoAndWaitForEngine(page: any, url: string) {
 }
 
 test('play button starts playback, shows pause and enables stop', async ({ page }) => {
-  await gotoAndWaitForEngine(page, '/songs/america')
+  await gotoAndWaitForEngine(page, '/songs/a-way-out-online')
   const playBtn = page.locator('#btn-play')
   await expect(playBtn).toHaveText('Play')
 
@@ -37,7 +37,7 @@ test('play button starts playback, shows pause and enables stop', async ({ page 
 })
 
 test('pause button pauses playback', async ({ page }) => {
-  await gotoAndWaitForEngine(page, '/songs/america')
+  await gotoAndWaitForEngine(page, '/songs/a-way-out-online')
   await page.click('#btn-play')
   await expect(page.locator('#btn-pause')).toBeVisible({ timeout: 10000 })
 
@@ -48,7 +48,7 @@ test('pause button pauses playback', async ({ page }) => {
 })
 
 test('stop button stops playback', async ({ page }) => {
-  await gotoAndWaitForEngine(page, '/songs/america')
+  await gotoAndWaitForEngine(page, '/songs/a-way-out-online')
   await page.click('#btn-play')
   await expect(page.locator('#btn-pause')).toBeVisible({ timeout: 10000 })
 
@@ -60,7 +60,7 @@ test('stop button stops playback', async ({ page }) => {
 })
 
 test('clicking a chord line seeks playback', async ({ page }) => {
-  await gotoAndWaitForEngine(page, '/songs/america')
+  await gotoAndWaitForEngine(page, '/songs/a-way-out-online')
   // Click on a section (line-pair) to trigger seek
   const linePair = page.locator('.line-pair').first()
   if (await linePair.isVisible()) {
@@ -72,7 +72,7 @@ test('clicking a chord line seeks playback', async ({ page }) => {
 })
 
 test('double-clicking section header toggles vamp', async ({ page }) => {
-  await gotoAndWaitForEngine(page, '/songs/america')
+  await gotoAndWaitForEngine(page, '/songs/a-way-out-online')
   // Start playback first so vamp is meaningful
   await page.click('#btn-play')
   await expect(page.locator('#btn-pause')).toBeVisible({ timeout: 10000 })

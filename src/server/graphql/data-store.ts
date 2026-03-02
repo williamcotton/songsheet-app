@@ -3,6 +3,12 @@ import path from 'node:path';
 import { parse } from 'songsheet';
 import type { DataStore, SongSummary, SongData } from '../../shared/graphql/types.ts';
 
+function normalizeLineEndings(rawText: string): string {
+  // Browser form submissions serialize textarea newlines as CRLF.
+  // Persist song files with LF to keep repo diffs and parser fixtures stable.
+  return rawText.replace(/\r\n?/g, '\n');
+}
+
 export function createDataStore(songsDir: string): DataStore {
   return {
     async getSongs(): Promise<SongSummary[]> {
@@ -35,13 +41,14 @@ export function createDataStore(songsDir: string): DataStore {
     async updateSong(id: string, rawText: string): Promise<SongData | null> {
       const filePath = path.join(songsDir, id + '.txt');
       if (!fs.existsSync(filePath)) return null;
-      fs.writeFileSync(filePath, rawText, 'utf-8');
-      const song = parse(rawText);
+      const normalizedRawText = normalizeLineEndings(rawText);
+      fs.writeFileSync(filePath, normalizedRawText, 'utf-8');
+      const song = parse(normalizedRawText);
       return {
         id,
         title: song.title || id,
         author: song.author || '',
-        rawText,
+        rawText: normalizedRawText,
       };
     },
   };
