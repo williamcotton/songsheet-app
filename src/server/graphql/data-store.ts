@@ -31,5 +31,18 @@ export function createDataStore(songsDir: string): DataStore {
         rawText,
       };
     },
+
+    async updateSong(id: string, rawText: string): Promise<SongData | null> {
+      const filePath = path.join(songsDir, id + '.txt');
+      if (!fs.existsSync(filePath)) return null;
+      fs.writeFileSync(filePath, rawText, 'utf-8');
+      const song = parse(rawText);
+      return {
+        id,
+        title: song.title || id,
+        author: song.author || '',
+        rawText,
+      };
+    },
   };
 }

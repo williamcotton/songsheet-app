@@ -14,4 +14,5 @@ export interface SongData {
 export interface DataStore {
   getSongs(): Promise<SongSummary[]>;
   getSong(id: string): Promise<SongData | null>;
+  updateSong(id: string, rawText: string): Promise<SongData | null>;
 }

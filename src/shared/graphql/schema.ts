@@ -44,5 +44,20 @@ export function createSchema(dataStore: DataStore): GraphQLSchema {
     },
   });
 
-  return new GraphQLSchema({ query: QueryType });
+  const MutationType = new GraphQLObjectType({
+    name: 'Mutation',
+    fields: {
+      updateSong: {
+        type: SongDataType,
+        args: {
+          id: { type: new GraphQLNonNull(GraphQLString) },
+          rawText: { type: new GraphQLNonNull(GraphQLString) },
+        },
+        resolve: (_root, args: { id: string; rawText: string }) =>
+          dataStore.updateSong(args.id, args.rawText),
+      },
+    },
+  });
+
+  return new GraphQLSchema({ query: QueryType, mutation: MutationType });
 }

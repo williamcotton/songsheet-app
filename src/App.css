@@ -305,9 +305,115 @@ input[type="range"] {
 .chord-stop .chord-decorator { color: #e94560; }
 .chord-nashville { text-decoration: underline; text-decoration-style: dotted; }
 
+.btn-link {
+  display: inline-block;
+  font-size: 14px;
+  font-weight: 600;
+  border: 1px solid #0f3460;
+  border-radius: 4px;
+  background: #0f3460;
+  color: #e0e0e0;
+  padding: 6px 10px;
+  text-decoration: none;
+  cursor: pointer;
+  min-width: 60px;
+  text-align: center;
+}
+.btn-link:hover { background: #1a5276; }
+
+/* ─── Edit page layout ─────────────────────────────────────────── */
+
+.edit-container {
+  display: flex;
+  height: calc(100vh - 49px);
+}
+
+.edit-left {
+  width: 50%;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid #0f3460;
+}
+
+.edit-left form {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.edit-textarea {
+  flex: 1;
+  resize: none;
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  background: #12122a;
+  color: #e0e0e0;
+  border: none;
+  padding: 16px;
+  outline: none;
+  tab-size: 2;
+}
+
+.edit-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #16213e;
+  border-top: 1px solid #0f3460;
+}
+
+.edit-toolbar button[type="submit"] {
+  background: #e94560;
+  color: #fff;
+  font-weight: 600;
+  padding: 6px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.edit-toolbar button[type="submit"]:hover {
+  background: #d63a54;
+}
+
+.edit-right {
+  width: 50%;
+  overflow-y: auto;
+}
+
+.edit-right #controls {
+  position: sticky;
+  top: 0;
+}
+
+.edit-right #song-display {
+  padding: 24px 20px 80px;
+}
+
 /* ─── Mobile responsive ─────────────────────────────────────────── */
 
 @media (max-width: 768px) {
+  .edit-container {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .edit-left,
+  .edit-right {
+    width: 100%;
+  }
+
+  .edit-left {
+    border-right: none;
+    border-bottom: 1px solid #0f3460;
+  }
+
+  .edit-textarea {
+    min-height: 40vh;
+  }
+
   #nav-bar {
     padding: 10px 12px;
   }

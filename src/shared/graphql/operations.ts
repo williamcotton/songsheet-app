@@ -18,3 +18,14 @@ export const SONG_QUERY = `
     }
   }
 `;
+
+export const UPDATE_SONG_MUTATION = `
+  mutation UpdateSong($id: String!, $rawText: String!) {
+    updateSong(id: $id, rawText: $rawText) {
+      id
+      title
+      author
+      rawText
+    }
+  }
+`;
