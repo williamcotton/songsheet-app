@@ -13,10 +13,6 @@ npm run dev
 
 Then open `http://localhost:3000/songs`.
 
-## Guided Product Tour
-
-This walkthrough tells the app story in the same order most users experience it: find a song, shape playback, edit the text, rehearse loops, switch notation, then look at parsing internals.
-
 ### 1) Browse the song library
 
 The song list is the entry point into the system. From this page you pick a chart and move into either the song detail view for playback or the edit view for source updates.
