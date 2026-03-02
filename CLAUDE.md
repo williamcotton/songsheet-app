@@ -10,9 +10,11 @@ npm run build        # client + server production build
 npm run start        # run production server
 npm run preview      # alias for production server
 npm run typecheck    # type-check only (no output files)
+npm test             # vitest run — unit/integration/hook tests
+npm run test:watch   # vitest watch mode
+npm run test:ui      # vitest browser UI
+npm run test:e2e     # playwright E2E tests (starts dev server automatically)
 ```
-
-No dedicated app test runner is configured.
 
 ## Architecture
 
@@ -45,6 +47,29 @@ This app is a server-rendered React app (not a single-file SPA). `server.ts` hos
 - `src/client/entry-client.tsx` — client-side hydration; accepts Vite HMR updates and cleans up on dispose
 - `public/songs/*.txt` — song source files loaded by the server GraphQL data store
 
+### Testing
+
+Two test systems configured via `vitest.config.ts` and `playwright.config.ts`:
+
+- **Vitest** (91 tests) — unit, integration, hook, and audio engine tests in `test/`
+  - `test/chordUtils.test.ts` — chord math, display formatting, measure lookup
+  - `test/shared/utils/url.test.ts` — query string parsing
+  - `test/shared/router.test.ts` — path-to-regexp routing
+  - `test/server/graphql/data-store.test.ts` — file-backed data store (uses real temp dir)
+  - `test/server/graphql/schema.test.ts` — GraphQL schema queries/mutations
+  - `test/server/graphql/endpoint.test.ts` — Express endpoint with mock req/res
+  - `test/entry-server.test.ts` — SSR rendering with mock GraphQL executor
+  - `test/useAutoScroll.test.ts` — scroll animation hook with rAF mocking
+  - `test/audioEngine.test.ts` — Tone.js engine with full mock of Transport/Synth/Draw
+  - `test/useAudioPlayback.test.ts` — playback hook lifecycle with mocked engine
+- **Playwright** (15 tests) — browser E2E tests in `e2e/`, run against the dev server
+  - `e2e/song-list.spec.ts` — list page rendering and navigation
+  - `e2e/song-detail.spec.ts` — detail page, transpose, Nashville toggle
+  - `e2e/song-edit.spec.ts` — editor, live preview, save
+  - `e2e/playback.spec.ts` — play/pause/stop, click-to-seek, section vamp
+
+Vitest uses two projects: `jsdom` environment for client-side tests, `node` environment for `test/server/**`. Server tests use real `graphql` execution and real filesystem operations (temp dirs).
+
 ## Data Flow
 
 1. Route `/songs/:id` resolves song text via GraphQL and SSR-renders `SongDetail`.
@@ -68,3 +93,4 @@ This app is a server-rendered React app (not a single-file SPA). `server.ts` hos
 - Strict mode enabled (`noEmit`, bundler module resolution)
 - Imports keep explicit `.ts`/`.tsx` extensions for local files
 - `AudioEngine` PolySynth options require a cast due Tone.js type limitations
+- `tsconfig.json` includes `test` and `e2e` directories for type-checking test files

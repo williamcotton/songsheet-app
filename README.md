@@ -36,6 +36,10 @@ The app server starts at `http://localhost:3000` by default.
 | `npm run start` | Run production server |
 | `npm run preview` | Alias for production server |
 | `npm run typecheck` | Type-check without emitting |
+| `npm test` | Run Vitest unit/integration/hook tests |
+| `npm run test:watch` | Vitest in watch mode |
+| `npm run test:ui` | Vitest browser UI |
+| `npm run test:e2e` | Run Playwright E2E tests |
 
 ## Project Structure
 
@@ -60,6 +64,8 @@ src/
 │   ├── universal-app.tsx    # Route registration (GET/POST)
 │   └── graphql/             # Queries, mutations, and schema shared by server and client
 └── server/graphql/          # GraphQL data store (read + write) and executors
+test/                        # Vitest tests (unit, integration, hooks, audio)
+e2e/                         # Playwright E2E browser tests
 public/
 └── songs/                   # Plaintext song files
 ```
@@ -74,3 +80,10 @@ public/
 | [express](https://expressjs.com) 5 | App server |
 | [graphql](https://graphql.org/) | Song query layer |
 | [vite](https://vite.dev) 6 | Dev middleware + client/SSR builds |
+
+## Testing
+
+The app has two test layers:
+
+- **Vitest** (`npm test`) — 91 tests covering chord utilities, URL parsing, routing, GraphQL data store/schema/endpoint, SSR rendering, auto-scroll hook, audio engine (mocked Tone.js), and playback hook lifecycle. Config in `vitest.config.ts` with two projects: `jsdom` for client tests and `node` for server tests.
+- **Playwright** (`npm run test:e2e`) — 15 browser E2E tests covering song list navigation, song detail with transpose/NNS, live editor with preview, and playback controls (play/pause/stop, click-to-seek, section vamp). Config in `playwright.config.ts`; auto-starts the dev server.
