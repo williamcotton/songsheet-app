@@ -36,9 +36,10 @@ This app is a server-rendered React app (not a single-file SPA). `server.ts` hos
 ### Audio + Playback Stack
 
 - `src/components/SongView.tsx` — shared component extracted from SongDetail; owns parse/transpose/NNS state, playback controls, click-to-seek, section vamp, and auto-scroll. Accepts `scrollContainerRef` for scrolling within a panel and `extraControls` slot for page-specific buttons.
-- `src/components/pages/SongDetail.tsx` — thin wrapper: Layout + SongView + "Stage" and "Edit" links.
+- `src/components/pages/SongDetail.tsx` — thin wrapper: Layout + SongView + "Stage", "Export", and "Edit" controls; desktop control-strip width is tuned so these actions stay on one row.
 - `src/components/pages/SongEdit.tsx` — side-by-side textarea editor (left) with live SongView preview (right). Form POST saves via `updateSong` GraphQL mutation. Uses `lastGoodSongRef` in SongView to keep preview stable on parse errors during editing.
 - `src/components/SongPerformance.tsx` — dedicated stage view with enlarged chart typography and minimal transport controls (`Play/Pause`, `Stop`, `Met.`, `Back to Chart`), plus click-to-seek and section vamp toggles.
+- `src/components/ExportMenu.tsx` — detail-page export menu for `PDF / Print`, plain-text `.txt` download, and copyable share link.
 - `src/useAudioPlayback.ts` wraps engine lifecycle/state (`stopped`/`playing`/`paused`), owns `activeHighlight` and vamp state, and bridges callbacks into React state. Accepts `initialBpm`. Includes Safari audio-interruption recovery: visibility change, focus, pageshow, user-gesture, and 3-second polling while playing.
 - `src/audioEngine.ts` schedules playback from parser-produced `song.playback`, uses full time signature (`beats` + `value`) for timing, emits per-chord `onPositionChange` with `markerIndex`, and applies a release gap before chord end. Includes `ensureContextRunning()` to handle Safari closed/suspended/interrupted `AudioContext` states, with automatic context reset and synth re-initialization.
 - `src/components/SongRendering.tsx` renders chord/bar markers and applies active styles from `{ structureIndex, lineIndex, markerIndex }`.
@@ -49,6 +50,7 @@ This app is a server-rendered React app (not a single-file SPA). `server.ts` hos
 - `src/chordUtils.ts` — chord-to-note conversion, display formatting, measure lookup helpers (`findMeasureIndex`, `getMeasureRangeForSection`)
 - `src/types.ts` — re-exports types from `songsheet` package; adds app-local `ActiveHighlight` and `PlaybackState`
 - `src/useAutoScroll.ts` — scroll animation hook used during playback; supports optional `containerRef` for scrolling within a panel (used by SongEdit)
+- `src/App.css` — global layout/theme styles plus print media rules that hide nav/transport controls during `PDF / Print` export
 - `src/client/entry-client.tsx` — client-side hydration; accepts Vite HMR updates and cleans up on dispose
 - `public/songs/*.txt` — song source files loaded by the server GraphQL data store
 
@@ -67,12 +69,12 @@ Two test systems configured via `vitest.config.ts` and `playwright.config.ts`:
   - `test/useAutoScroll.test.ts` — scroll animation hook with rAF mocking
   - `test/audioEngine.test.ts` — Tone.js engine with full mock of Transport/Synth/Draw
   - `test/useAudioPlayback.test.ts` — playback hook lifecycle with mocked engine
-- **Playwright** (24 tests) — browser E2E tests in `e2e/`, run against the dev server
+- **Playwright** (29 tests) — browser E2E tests in `e2e/`, run against the dev server
   - `e2e/song-list.spec.ts` — list page rendering and navigation
-  - `e2e/song-detail.spec.ts` — detail page, stage route link, transpose, Nashville toggle
+  - `e2e/song-detail.spec.ts` — detail page, stage route link, export actions, transpose, Nashville toggle
   - `e2e/song-edit.spec.ts` — editor, live preview, save
   - `e2e/playback.spec.ts` — play/pause/stop, click-to-seek, section vamp, performance-page minimal controls
-  - `e2e/readme-screenshots.spec.ts` — curated screenshot scenarios for README sections (`readme-*.png`, including `readme-performance-mode.png`)
+  - `e2e/readme-screenshots.spec.ts` — curated screenshot scenarios for README sections (`readme-*.png`, including `readme-performance-mode.png` and `readme-export.png`)
 
 ### README Screenshot Workflow
 

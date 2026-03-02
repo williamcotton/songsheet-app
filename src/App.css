@@ -100,7 +100,7 @@ body {
   z-index: 10;
   background: #16213e;
   border-bottom: 1px solid #0f3460;
-  padding: 12px max(20px, calc((100% - 900px) / 2));
+  padding: 12px max(20px, calc((100% - 1120px) / 2));
   display: flex;
   align-items: center;
   gap: 16px;
@@ -321,6 +321,40 @@ input[type="range"] {
 }
 .btn-link:hover { background: #1a5276; }
 
+#btn-export.on {
+  background: #e94560;
+  color: #fff;
+}
+
+.export-control {
+  position: relative;
+}
+
+.export-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 190px;
+  display: grid;
+  gap: 6px;
+  border: 1px solid #0f3460;
+  border-radius: 8px;
+  padding: 8px;
+  background: rgba(22, 33, 62, 0.98);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+}
+
+.export-menu button {
+  width: 100%;
+  text-align: left;
+}
+
+#export-copy-status {
+  margin: 4px 2px 0;
+  font-size: 12px;
+  color: #53d8fb;
+}
+
 /* ─── Performance page ─────────────────────────────────────────── */
 
 .performance-page {
@@ -507,6 +541,61 @@ input[type="range"] {
   padding: 24px 20px 80px;
 }
 
+/* ─── Print styles ─────────────────────────────────────────────── */
+
+@media print {
+  body {
+    background: #fff;
+    color: #000;
+  }
+
+  #nav-bar,
+  #controls {
+    display: none !important;
+  }
+
+  #song-display {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .performance-page {
+    min-height: auto;
+    background: #fff;
+  }
+
+  #song-title,
+  #song-author,
+  .section-header,
+  .chord-row,
+  .lyric-row,
+  .directive-chords,
+  .expression-label {
+    color: #000;
+  }
+
+  .section,
+  .section.active-section,
+  .section.vamped-section {
+    margin-bottom: 14px;
+    padding: 0;
+    border-left: none;
+    background: transparent;
+  }
+
+  .line-pair,
+  .line-pair.active-line,
+  .line-pair:hover {
+    background: transparent;
+  }
+
+  .chord-marker.active-marker {
+    color: #000;
+    text-shadow: none;
+  }
+}
+
 /* ─── Mobile responsive ─────────────────────────────────────────── */
 
 @media (max-width: 768px) {
@@ -608,6 +697,11 @@ input[type="range"] {
     font-size: clamp(17px, 5vw, 24px);
     white-space: pre-wrap;
     overflow-wrap: break-word;
+  }
+
+  .export-menu {
+    right: auto;
+    left: 0;
   }
 }
 

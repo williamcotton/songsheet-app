@@ -25,7 +25,7 @@ On `/songs/:id`, the chart and transport controls are already connected, so you 
 
 ![Transpose, BPM, and metronome controls](screenshots/readme-transpose-tempo.png)
 
-From this page, `Edit` opens `/songs/:id/edit` for source updates, and `Stage` opens `/songs/:id/performance` for the large-format performance layout.
+From this page, `Edit` opens `/songs/:id/edit` for source updates, and `Stage` opens `/songs/:id/performance` for the large-format performance layout. On desktop widths, the control strip is sized to keep `Stage`, `Export`, and `Edit` on one row.
 
 ### 3) Edit plaintext and see the chart update live
 
@@ -45,13 +45,19 @@ Playback advances through parsed positions while highlighting active markers in 
 
 ![Performance mode stage layout](screenshots/readme-performance-mode.png)
 
-### 6) Switch chord notation to Nashville numbers
+### 6) Take the chart anywhere with export options
+
+From the song detail controls, `Export` opens three output paths: `PDF / Print` (via browser print dialog), `Plain Text` (downloads the source `.txt`), and `Copy Share Link` (copies the current chart URL). The print stylesheet hides navigation and transport controls so exported pages contain only song content.
+
+![Export options menu](screenshots/readme-export.png)
+
+### 7) Switch chord notation to Nashville numbers
 
 For keyed songs, you can switch to Nashville Number System to see scale-degree harmony instead of letter-name chords. This changes representation, not musical intent, so playback audio remains harmonically equivalent while the chart becomes easier to communicate in number-based workflows.
 
 ![Nashville number mode](screenshots/readme-nashville.png)
 
-### 7) Deep dive: parse text into a full song detail page
+### 8) Deep dive: parse text into a full song detail page
 
 The primary reference file is `public/songs/a-way-out-online.txt`, which is the source used across the screenshots above.
 
@@ -178,6 +184,7 @@ src/
       SongDetail.tsx         # /songs/:id
       SongEdit.tsx           # /songs/:id/edit
       SongPerformancePage.tsx # /songs/:id/performance
+    ExportMenu.tsx           # Export options: print/text/share
     SongPerformance.tsx      # Minimal-control stage layout renderer/player
     SongView.tsx             # Controls + rendering + playback state integration
     SongRendering.tsx        # Chord/lyric rendering

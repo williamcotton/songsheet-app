@@ -124,6 +124,17 @@ test('README: performance mode stage layout', async ({ page }) => {
   await page.screenshot({ path: 'screenshots/readme-performance-mode.png' })
 })
 
+test('README: export menu options', async ({ page }) => {
+  await page.setViewportSize(VIEWPORT)
+  await page.goto('/songs/a-way-out-online')
+  await waitForHydration(page)
+
+  await page.click('#btn-export')
+  await expect(page.locator('#export-menu')).toBeVisible()
+
+  await page.screenshot({ path: 'screenshots/readme-export.png' })
+})
+
 test('README: Nashville numbers on keyed songs', async ({ page }) => {
   await page.setViewportSize(VIEWPORT)
   await page.goto('/songs/spent-some-time-in-buffalo')

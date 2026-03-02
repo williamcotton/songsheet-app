@@ -34,6 +34,66 @@ test('Stage link navigates to performance page', async ({ page }) => {
   await expect(page.locator('#btn-transpose-up')).toHaveCount(0)
 })
 
+test('Export menu exposes print, text, and share options', async ({ page }) => {
+  await page.goto('/songs/a-way-out-online')
+  await waitForHydration(page)
+  await page.click('#btn-export')
+  await expect(page.locator('#export-menu')).toBeVisible()
+  await expect(page.locator('#btn-export-print')).toHaveText('PDF / Print')
+  await expect(page.locator('#btn-export-text')).toHaveText('Plain Text')
+  await expect(page.locator('#btn-export-link')).toHaveText('Copy Share Link')
+})
+
+test('Export plain text triggers a song text download', async ({ page }) => {
+  await page.goto('/songs/a-way-out-online')
+  await waitForHydration(page)
+  await page.click('#btn-export')
+  const downloadPromise = page.waitForEvent('download')
+  await page.click('#btn-export-text')
+  const download = await downloadPromise
+  expect(download.suggestedFilename()).toBe('a-way-out-online.txt')
+})
+
+test('Export share link copies URL', async ({ page }) => {
+  await page.addInitScript(() => {
+    ;(window as any).__copiedShareUrl = ''
+    const clipboardStub = {
+      writeText: async (text: string) => {
+        ;(window as any).__copiedShareUrl = text
+      },
+    }
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: clipboardStub,
+    })
+  })
+
+  await page.goto('/songs/a-way-out-online')
+  await waitForHydration(page)
+  await page.click('#btn-export')
+  await page.click('#btn-export-link')
+
+  await expect(page.locator('#export-copy-status')).toHaveText('Copied link')
+  const copiedUrl = await page.evaluate(() => (window as any).__copiedShareUrl)
+  expect(copiedUrl).toContain('/songs/a-way-out-online')
+})
+
+test('Export print calls window.print', async ({ page }) => {
+  await page.addInitScript(() => {
+    ;(window as any).__printCallCount = 0
+    window.print = () => {
+      ;(window as any).__printCallCount += 1
+    }
+  })
+
+  await page.goto('/songs/a-way-out-online')
+  await waitForHydration(page)
+  await page.click('#btn-export')
+  await page.click('#btn-export-print')
+  const printCallCount = await page.evaluate(() => (window as any).__printCallCount)
+  expect(printCallCount).toBe(1)
+})
+
 test('transpose up changes chords', async ({ page }) => {
   await page.goto('/songs/a-way-out-online')
   await waitForHydration(page)

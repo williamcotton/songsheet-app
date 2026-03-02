@@ -1,5 +1,6 @@
 import { Layout } from '../Layout.tsx';
 import { SongView } from '../SongView.tsx';
+import { ExportMenu } from '../ExportMenu.tsx';
 
 export function SongDetail({ rawText, songId }: { rawText: string; songId: string }) {
   return (
@@ -12,6 +13,7 @@ export function SongDetail({ rawText, songId }: { rawText: string; songId: strin
             <div className="control-group">
               <a id="btn-performance-link" href={`/songs/${songId}/performance`} className="btn-link">Stage</a>
             </div>
+            <ExportMenu rawText={rawText} songId={songId} />
             <div className="control-group">
               <a href={`/songs/${songId}/edit`} className="btn-link">Edit</a>
             </div>
