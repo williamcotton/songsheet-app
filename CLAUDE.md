@@ -14,6 +14,9 @@ npm test             # vitest run — unit/integration/hook tests
 npm run test:watch   # vitest watch mode
 npm run test:ui      # vitest browser UI
 npm run test:e2e     # playwright E2E tests (starts dev server automatically)
+npm run clean:screenshots              # delete screenshots/ artifacts
+npm run test:e2e:readme-screenshots    # run README screenshot scenario spec only
+npm run refresh:readme-screenshots     # clean screenshots/ then regenerate README screenshots
 ```
 
 ## Architecture
@@ -27,7 +30,7 @@ This app is a server-rendered React app (not a single-file SPA). `server.ts` hos
 - `/songs/:id` -> `src/components/pages/SongDetail.tsx`
 - `/songs/:id/edit` (GET + POST) -> `src/components/pages/SongEdit.tsx`
 - GraphQL data is loaded server-side and cached in the initial HTML payload.
-- POST `/songs/:id/edit` calls the `updateSong` GraphQL mutation, writes the file to disk, and redirects back to the edit page.
+- POST `/songs/:id/edit` calls the `updateSong` GraphQL mutation, normalizes textarea CRLF line endings to LF before writing, and redirects back to the edit page.
 
 ### Audio + Playback Stack
 
@@ -51,7 +54,7 @@ This app is a server-rendered React app (not a single-file SPA). `server.ts` hos
 
 Two test systems configured via `vitest.config.ts` and `playwright.config.ts`:
 
-- **Vitest** (91 tests) — unit, integration, hook, and audio engine tests in `test/`
+- **Vitest** (92 tests) — unit, integration, hook, and audio engine tests in `test/`
   - `test/chordUtils.test.ts` — chord math, display formatting, measure lookup
   - `test/shared/utils/url.test.ts` — query string parsing
   - `test/shared/router.test.ts` — path-to-regexp routing
@@ -62,13 +65,38 @@ Two test systems configured via `vitest.config.ts` and `playwright.config.ts`:
   - `test/useAutoScroll.test.ts` — scroll animation hook with rAF mocking
   - `test/audioEngine.test.ts` — Tone.js engine with full mock of Transport/Synth/Draw
   - `test/useAudioPlayback.test.ts` — playback hook lifecycle with mocked engine
-- **Playwright** (15 tests) — browser E2E tests in `e2e/`, run against the dev server
+- **Playwright** (21 tests) — browser E2E tests in `e2e/`, run against the dev server
   - `e2e/song-list.spec.ts` — list page rendering and navigation
   - `e2e/song-detail.spec.ts` — detail page, transpose, Nashville toggle
   - `e2e/song-edit.spec.ts` — editor, live preview, save
   - `e2e/playback.spec.ts` — play/pause/stop, click-to-seek, section vamp
+  - `e2e/readme-screenshots.spec.ts` — curated screenshot scenarios for README sections (`readme-*.png`)
+
+### README Screenshot Workflow
+
+When you change any page that appears in README screenshots, or you edit README sections that reference screenshots, regenerate artifacts before committing.
+
+Primary command:
+
+```bash
+npm run refresh:readme-screenshots
+```
+
+This command:
+1. Removes `screenshots/`.
+2. Runs `e2e/readme-screenshots.spec.ts` to regenerate `screenshots/readme-*.png`.
+
+Notes:
+- Screenshot scenarios are isolated from core behavior specs; use the dedicated spec for README assets.
+- Keep `readme-song-detail-full.png` as full-page capture.
+- Keep other README screenshots viewport-sized for consistent markdown layout.
 
 Vitest uses two projects: `jsdom` environment for client-side tests, `node` environment for `test/server/**`. Server tests use real `graphql` execution and real filesystem operations (temp dirs).
+
+### Documentation Sync Policy
+
+At the end of every completed task/plan, always update `README.md`, `CLAUDE.md`, and `AGENTS.md` (workspace root) so documentation remains aligned with the latest code, commands, test expectations, and workflows.
+This policy is additive and does not replace other required changes: complete implementation work, run required validation/tests, and refresh screenshot artifacts when documentation visuals are affected.
 
 ## Data Flow
 
