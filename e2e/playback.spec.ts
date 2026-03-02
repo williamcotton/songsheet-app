@@ -86,3 +86,16 @@ test('double-clicking section header toggles vamp', async ({ page }) => {
     await expect(section).toHaveClass(/vamped-section/, { timeout: 3000 })
   }
 })
+
+test('performance page keeps minimal controls and supports playback', async ({ page }) => {
+  await gotoAndWaitForEngine(page, '/songs/a-way-out-online/performance')
+
+  await expect(page.locator('#btn-play')).toHaveText('Play')
+  await expect(page.locator('#btn-transpose-up')).toHaveCount(0)
+  await expect(page.locator('#btn-nashville')).toHaveCount(0)
+  await expect(page.locator('#btn-back-to-chart')).toBeVisible()
+
+  await page.click('#btn-play')
+  await expect(page.locator('#btn-pause')).toBeVisible({ timeout: 10000 })
+  await expect(page.locator('#btn-stop')).toBeEnabled()
+})

@@ -111,6 +111,19 @@ test('README: playback controls and section vamp loop', async ({ page }) => {
   await page.screenshot({ path: 'screenshots/readme-playback-loop.png' })
 })
 
+test('README: performance mode stage layout', async ({ page }) => {
+  await enableAudioContext(page)
+  await page.setViewportSize(VIEWPORT)
+  await page.goto('/songs/a-way-out-online/performance')
+  await waitForHydration(page)
+  await page.waitForTimeout(500)
+
+  await expect(page.locator('#song-display')).toContainText('Well I know you Knight Riders')
+  await expect(page.locator('#btn-transpose-up')).toHaveCount(0)
+
+  await page.screenshot({ path: 'screenshots/readme-performance-mode.png' })
+})
+
 test('README: Nashville numbers on keyed songs', async ({ page }) => {
   await page.setViewportSize(VIEWPORT)
   await page.goto('/songs/spent-some-time-in-buffalo')

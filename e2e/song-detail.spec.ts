@@ -26,6 +26,14 @@ test('Edit link navigates to edit page', async ({ page }) => {
   await expect(page).toHaveURL('/songs/a-way-out-online/edit')
 })
 
+test('Stage link navigates to performance page', async ({ page }) => {
+  await page.goto('/songs/a-way-out-online')
+  await page.click('#btn-performance-link')
+  await expect(page).toHaveURL('/songs/a-way-out-online/performance')
+  await expect(page.locator('#btn-back-to-chart')).toBeVisible()
+  await expect(page.locator('#btn-transpose-up')).toHaveCount(0)
+})
+
 test('transpose up changes chords', async ({ page }) => {
   await page.goto('/songs/a-way-out-online')
   await waitForHydration(page)

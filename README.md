@@ -25,7 +25,7 @@ On `/songs/:id`, the chart and transport controls are already connected, so you 
 
 ![Transpose, BPM, and metronome controls](screenshots/readme-transpose-tempo.png)
 
-When you want to change the text model itself, use the `Edit` button on this page to transition to `/songs/:id/edit`.
+From this page, `Edit` opens `/songs/:id/edit` for source updates, and `Stage` opens `/songs/:id/performance` for the large-format performance layout.
 
 ### 3) Edit plaintext and see the chart update live
 
@@ -39,13 +39,19 @@ Playback advances through parsed positions while highlighting active markers in 
 
 ![Playback with section loop](screenshots/readme-playback-loop.png)
 
-### 5) Switch chord notation to Nashville numbers
+### 5) Take it on stage with a dedicated performance page
+
+`/songs/:id/performance` keeps only transport controls and enlarges chart typography so the song stays readable at a distance. It still supports line click-to-seek and section double-click vamping for rehearsal flow.
+
+![Performance mode stage layout](screenshots/readme-performance-mode.png)
+
+### 6) Switch chord notation to Nashville numbers
 
 For keyed songs, you can switch to Nashville Number System to see scale-degree harmony instead of letter-name chords. This changes representation, not musical intent, so playback audio remains harmonically equivalent while the chart becomes easier to communicate in number-based workflows.
 
 ![Nashville number mode](screenshots/readme-nashville.png)
 
-### 6) Deep dive: parse text into a full song detail page
+### 7) Deep dive: parse text into a full song detail page
 
 The primary reference file is `public/songs/a-way-out-online.txt`, which is the source used across the screenshots above.
 
@@ -171,6 +177,8 @@ src/
       SongList.tsx           # /songs
       SongDetail.tsx         # /songs/:id
       SongEdit.tsx           # /songs/:id/edit
+      SongPerformancePage.tsx # /songs/:id/performance
+    SongPerformance.tsx      # Minimal-control stage layout renderer/player
     SongView.tsx             # Controls + rendering + playback state integration
     SongRendering.tsx        # Chord/lyric rendering
   audioEngine.ts             # Tone.js scheduling and playback callbacks

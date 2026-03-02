@@ -32,6 +32,17 @@ export function registerRoutes(app: UniversalApp) {
     res.redirect(`/songs/${id}/edit`);
   });
 
+  app.get('/songs/:id/performance', async (req, res) => {
+    const result = await req.graphql<{ song: SongData | null }>(SONG_QUERY, { id: req.params.id });
+    if (!result.data?.song) {
+      res.setStatus(404);
+      res.renderApp(<Layout><p className="no-song">Song not found.</p></Layout>);
+      return;
+    }
+    const { SongPerformancePage } = await import('../components/pages/SongPerformancePage.tsx');
+    res.renderApp(<SongPerformancePage rawText={result.data.song.rawText} songId={req.params.id} />);
+  });
+
   app.get('/songs/:id', async (req, res) => {
     const result = await req.graphql<{ song: SongData | null }>(SONG_QUERY, { id: req.params.id });
     if (!result.data?.song) {

@@ -321,6 +321,112 @@ input[type="range"] {
 }
 .btn-link:hover { background: #1a5276; }
 
+/* ─── Performance page ─────────────────────────────────────────── */
+
+.performance-page {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 15% 15%, rgba(83, 216, 251, 0.12), transparent 48%),
+    radial-gradient(circle at 85% 10%, rgba(233, 69, 96, 0.2), transparent 38%),
+    linear-gradient(180deg, #060916 0%, #0d1225 42%, #0a1020 100%);
+}
+
+.performance-page #controls {
+  position: sticky;
+  top: 0;
+  z-index: 25;
+  border-bottom: 1px solid rgba(83, 216, 251, 0.3);
+  background: rgba(7, 12, 28, 0.88);
+  backdrop-filter: blur(8px);
+  padding: 12px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.performance-page #controls .control-group {
+  flex-wrap: wrap;
+}
+
+.performance-page #song-display {
+  max-width: none;
+  margin: 0;
+  padding: 26px clamp(16px, 4vw, 60px) 120px;
+}
+
+.performance-song-display .no-song {
+  margin-top: 40px;
+}
+
+.performance-page #song-title {
+  color: #f0f4ff;
+  font-size: clamp(34px, 4vw, 56px);
+  line-height: 1.1;
+  margin-bottom: 8px;
+}
+
+.performance-page #song-author {
+  color: #aac3e8;
+  font-size: clamp(16px, 1.9vw, 24px);
+  margin-bottom: 34px;
+}
+
+.performance-page .section {
+  margin-bottom: 28px;
+  padding: 12px 16px;
+  border-left-width: 4px;
+  border-left-color: rgba(83, 216, 251, 0.32);
+  background: rgba(22, 33, 62, 0.48);
+}
+
+.performance-page .section.active-section {
+  background: rgba(83, 216, 251, 0.12);
+  border-left-color: #53d8fb;
+}
+
+.performance-page .section.vamped-section {
+  border-left-color: #f0c040;
+  background: rgba(240, 192, 64, 0.14);
+}
+
+.performance-page .section-header {
+  color: #53d8fb;
+  font-size: 14px;
+  letter-spacing: 1.6px;
+  margin-bottom: 10px;
+}
+
+.performance-page .line-pair {
+  padding: 4px 6px;
+  border-radius: 5px;
+}
+
+.performance-page .line-pair:hover {
+  background: rgba(83, 216, 251, 0.08);
+}
+
+.performance-page .line-pair.active-line {
+  background: rgba(233, 69, 96, 0.2);
+}
+
+.performance-page .chord-row,
+.performance-page .lyric-row,
+.performance-page .directive-chords {
+  font-size: clamp(21px, 2.3vw, 32px);
+  line-height: 1.44;
+}
+
+.performance-page .expression-label {
+  font-size: 14px;
+}
+
+.performance-page button,
+.performance-page .btn-link {
+  font-size: 15px;
+  padding: 8px 12px;
+}
+
 /* ─── Edit page layout ─────────────────────────────────────────── */
 
 .edit-container {
@@ -485,6 +591,23 @@ input[type="range"] {
 
   input[type="range"] {
     width: 80px;
+  }
+
+  .performance-page #controls {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+
+  .performance-page #song-display {
+    padding: 18px 12px 90px;
+  }
+
+  .performance-page .chord-row,
+  .performance-page .lyric-row,
+  .performance-page .directive-chords {
+    font-size: clamp(17px, 5vw, 24px);
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
   }
 }
 
