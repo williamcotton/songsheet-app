@@ -50,6 +50,21 @@ export function SongView({ rawText, songId, scrollContainerRef, extraControls }:
     );
   }, [songId]);
 
+  // Keep transport metadata in sync while editing a song in-place.
+  useEffect(() => {
+    if (parsedSong?.bpm) audio.setBpm(parsedSong.bpm);
+    audio.setTimeSignature(
+      parsedSong?.timeSignature ? parsedSong.timeSignature.beats : 4,
+      parsedSong?.timeSignature ? parsedSong.timeSignature.value : 4,
+    );
+  }, [parsedSong?.bpm, parsedSong?.timeSignature?.beats, parsedSong?.timeSignature?.value]);
+
+  // Keep scheduled playback in sync with live edits/transposition.
+  useEffect(() => {
+    if (!currentSong) return;
+    audio.reschedule(currentSong);
+  }, [currentSong]);
+
   const displaySong = useMemo(() => {
     if (!currentSong) return null;
     const key = currentSong.key;
