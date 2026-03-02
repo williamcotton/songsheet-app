@@ -15,6 +15,8 @@ A React 19 + TypeScript songsheet app with Express/Vite SSR and Tone.js playback
 - **BPM control** — Adjustable tempo (40–160 BPM)
 - **Chord decorators** — Visual rendering of diamond `<G>`, push `^G`, stop `G!`, and split measure `[G C]`
 - **Strict split-measure syntax** — only bracket syntax (`[A B ...]`) creates multi-chord measures; `|` repeats measures
+- **Live editor** — Side-by-side song source editor with real-time preview; BPM, time signature, and chords update as you type
+- **Safari audio resilience** — Automatic recovery from AudioContext suspension/interruption (visibility changes, tab switches, iOS interruptions)
 
 ## Getting Started
 
@@ -44,16 +46,20 @@ src/
 ├── useAudioPlayback.ts      # React playback hook and engine lifecycle
 ├── useAutoScroll.ts         # Playback scroll behavior
 ├── chordUtils.ts            # Chord utilities and measure lookup helpers
-├── types.ts                 # App-local Song/playback types
+├── types.ts                 # Re-exports songsheet types + app-local interfaces
 ├── components/
+│   ├── SongView.tsx         # Shared song viewer (controls, playback, transpose, NNS)
 │   ├── SongRendering.tsx    # Chord/lyric rendering + active marker highlighting
 │   └── pages/
 │       ├── SongList.tsx     # /songs
-│       └── SongDetail.tsx   # /songs/:id
+│       ├── SongDetail.tsx   # /songs/:id
+│       └── SongEdit.tsx     # /songs/:id/edit (side-by-side editor + live preview)
+├── client/
+│   └── entry-client.tsx     # Client hydration + HMR support
 ├── shared/
-│   ├── universal-app.tsx    # Route registration
-│   └── graphql/             # Queries/schema shared by server and client
-└── server/graphql/          # GraphQL data store and executors
+│   ├── universal-app.tsx    # Route registration (GET/POST)
+│   └── graphql/             # Queries, mutations, and schema shared by server and client
+└── server/graphql/          # GraphQL data store (read + write) and executors
 public/
 └── songs/                   # Plaintext song files
 ```
