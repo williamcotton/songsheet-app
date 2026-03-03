@@ -35,7 +35,7 @@ The edit view keeps source and rendered output side-by-side, so each change stay
 
 ### 4) Play the chart and loop a section
 
-Playback advances through parsed positions while highlighting active markers in the chart. Double-clicking a section header enables vamp mode for that section, which is useful for rehearsal and timing checks. In audio terms, you hear the same cadence cycling until vamp is cleared, with the optional metronome click staying locked to the loop.
+Playback advances through parsed positions while highlighting the active section and chord marker in the chart. Double-clicking a section header enables vamp mode for that section, which is useful for rehearsal and timing checks. In audio terms, you hear the same cadence cycling until vamp is cleared, with the optional metronome click staying locked to the loop.
 
 ![Playback with section loop](screenshots/readme-playback-loop.png)
 

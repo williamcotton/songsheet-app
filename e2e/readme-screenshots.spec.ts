@@ -107,6 +107,8 @@ test('README: playback controls and section vamp loop', async ({ page }) => {
 
   await page.locator('.section-header').first().dblclick()
   await expect(page.locator('.section').first()).toHaveClass(/vamped-section/, { timeout: 3000 })
+  await expect(page.locator('.section').first()).toHaveClass(/active-section/, { timeout: 10000 })
+  await expect(page.locator('.section').first().locator('.chord-marker.active-marker').first()).toBeVisible({ timeout: 10000 })
 
   await page.screenshot({ path: 'screenshots/readme-playback-loop.png' })
 })

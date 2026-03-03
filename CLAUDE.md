@@ -74,7 +74,7 @@ Two test systems configured via `vitest.config.ts` and `playwright.config.ts`:
   - `e2e/song-detail.spec.ts` — detail page, stage route link, export actions, transpose, Nashville toggle
   - `e2e/song-edit.spec.ts` — editor, chart-link navigation, live preview, save
   - `e2e/playback.spec.ts` — play/pause/stop, click-to-seek, section vamp, performance-page minimal controls
-  - `e2e/readme-screenshots.spec.ts` — curated screenshot scenarios for README sections (`readme-*.png`, including `readme-performance-mode.png` and `readme-export.png`)
+  - `e2e/readme-screenshots.spec.ts` — curated screenshot scenarios for README sections (`readme-*.png`, including `readme-performance-mode.png` and `readme-export.png`); playback capture waits for both active section and active chord highlight
 
 ### README Screenshot Workflow
 
