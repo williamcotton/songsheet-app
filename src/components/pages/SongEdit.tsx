@@ -35,6 +35,11 @@ export function SongEdit({ rawText, songId }: { rawText: string; songId: string 
             rawText={editText}
             songId={songId}
             scrollContainerRef={previewRef}
+            extraControls={
+              <div className="control-group">
+                <a id="btn-back-to-detail" href={`/songs/${songId}`} className="btn-link">Chart</a>
+              </div>
+            }
           />
         </div>
       </div>

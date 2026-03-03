@@ -12,6 +12,13 @@ test('edit page shows textarea and preview', async ({ page }) => {
   await page.goto('/songs/a-way-out-online/edit')
   await expect(page.locator('.edit-textarea')).toBeVisible()
   await expect(page.locator('.edit-right')).toBeVisible()
+  await expect(page.locator('#btn-back-to-detail')).toBeVisible()
+})
+
+test('Chart link navigates back to song detail page', async ({ page }) => {
+  await page.goto('/songs/a-way-out-online/edit')
+  await page.click('#btn-back-to-detail')
+  await expect(page).toHaveURL('/songs/a-way-out-online')
 })
 
 test('typing in textarea updates preview', async ({ page }) => {

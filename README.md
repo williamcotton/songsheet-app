@@ -29,7 +29,7 @@ From this page, `Edit` opens `/songs/:id/edit` for source updates, and `Stage` o
 
 ### 3) Edit plaintext and see the chart update live
 
-The edit view keeps source and rendered output side-by-side, so each change stays grounded in visible feedback. As you type, metadata, chord rows, lyric alignment, and section structure are re-parsed in place, and BPM or meter edits become the next playback behavior without any separate conversion step.
+The edit view keeps source and rendered output side-by-side, so each change stays grounded in visible feedback. As you type, metadata, chord rows, lyric alignment, and section structure are re-parsed in place, and BPM or meter edits become the next playback behavior without any separate conversion step. The preview controls include a `Chart` link to return to `/songs/:id`.
 
 ![Live editing viewport](screenshots/readme-live-edit.png)
 
