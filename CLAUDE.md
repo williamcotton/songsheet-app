@@ -14,11 +14,11 @@ npm test             # vitest run — unit/integration/hook tests
 npm run test:watch   # vitest watch mode
 npm run test:ui      # vitest browser UI
 npm run test:e2e     # playwright E2E tests (starts dev server automatically)
-npm run clean:screenshots              # delete screenshots/ artifacts
-npm run test:e2e:readme-screenshots    # run README screenshot scenario spec only
-npm run test:e2e:readme-gif            # generate README playback GIF artifact
-npm run refresh:readme-playback-gif    # alias for README playback GIF generation
-npm run refresh:readme-screenshots     # clean screenshots/ then regenerate README screenshots
+npm run clean:screenshots              # delete README PNG screenshot artifacts (keeps GIFs)
+npm run test:e2e:readme-screenshots    # run README PNG scenario spec only (full detail page)
+npm run test:e2e:readme-gif            # generate README GIF artifacts
+npm run refresh:readme-playback-gif    # alias for README GIF generation
+npm run refresh:readme-screenshots     # clean PNG screenshots then regenerate readme-song-detail-full.png
 ```
 
 ## Architecture
@@ -71,32 +71,33 @@ Two test systems configured via `vitest.config.ts` and `playwright.config.ts`:
   - `test/useAutoScroll.test.ts` — scroll animation hook with rAF mocking
   - `test/audioEngine.test.ts` — Tone.js engine with full mock of Transport/Synth/Draw
   - `test/useAudioPlayback.test.ts` — playback hook lifecycle with mocked engine
-- **Playwright** (31 specs) — browser E2E tests in `e2e/`, run against the dev server
+- **Playwright** (26 tests across 6 spec files) — browser E2E tests in `e2e/`, run against the dev server
   - `e2e/song-list.spec.ts` — list page rendering and navigation
   - `e2e/song-detail.spec.ts` — detail page, stage route link, export actions, transpose, Nashville toggle
   - `e2e/song-edit.spec.ts` — editor, chart-link navigation, live preview, save
   - `e2e/playback.spec.ts` — play/pause/stop, click-to-seek, section vamp, performance-page minimal controls
-  - `e2e/readme-screenshots.spec.ts` — curated screenshot scenarios for README sections (`readme-*.png`, including `readme-performance-mode.png` and `readme-export.png`); playback capture waits for both active section and active chord highlight
-  - `e2e/readme-playback-gif.spec.ts` — on-demand GIF capture workflow (`readme-playback-loop.gif`) gated by `GENERATE_README_GIF=1`
+  - `e2e/readme-screenshots.spec.ts` — README PNG scenario for `readme-song-detail-full.png`
+  - `e2e/readme-playback-gif.spec.ts` — on-demand GIF capture workflow (gated by `GENERATE_README_GIF=1`) generating `readme-playback-loop.gif`, `readme-live-edit.gif` (adds `PRECHORUS:` before first `CHORUS:`), and `readme-chart-features.gif`
 
-### README Screenshot Workflow
+### README Asset Workflow
 
-When you change any page that appears in README screenshots, or you edit README sections that reference screenshots, regenerate artifacts before committing.
+When you change any page that appears in README media, or you edit README sections that reference those assets, regenerate artifacts before committing.
 
-Primary command:
+Primary commands:
 
 ```bash
 npm run refresh:readme-screenshots
+npm run refresh:readme-playback-gif
 ```
 
-This command:
-1. Removes `screenshots/`.
-2. Runs `e2e/readme-screenshots.spec.ts` to regenerate `screenshots/readme-*.png`.
+These commands:
+1. Remove and regenerate README PNG screenshots (`readme-song-detail-full.png`).
+2. Regenerate README GIF assets (`readme-playback-loop.gif`, `readme-live-edit.gif`, `readme-chart-features.gif`).
 
 Notes:
-- Screenshot scenarios are isolated from core behavior specs; use the dedicated spec for README assets.
+- README media generation specs are isolated from core behavior specs.
 - Keep `readme-song-detail-full.png` as full-page capture.
-- Keep other README screenshots viewport-sized for consistent markdown layout.
+- GIF generation uses Playwright frame capture plus `ffmpeg` palette conversion.
 
 Vitest uses two projects: `jsdom` environment for client-side tests, `node` environment for `test/server/**`. Server tests use real `graphql` execution and real filesystem operations (temp dirs).
 

@@ -15,7 +15,7 @@
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
     "test:e2e": "playwright test",
-    "clean:screenshots": "rm -rf screenshots",
+    "clean:screenshots": "mkdir -p screenshots && find screenshots -type f -name '*.png' -delete",
     "test:e2e:readme-screenshots": "playwright test e2e/readme-screenshots.spec.ts",
     "test:e2e:readme-gif": "GENERATE_README_GIF=1 playwright test e2e/readme-playback-gif.spec.ts",
     "refresh:readme-playback-gif": "npm run test:e2e:readme-gif",

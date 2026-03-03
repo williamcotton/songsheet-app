@@ -1,61 +1,39 @@
 # songsheet-app
 
-`songsheet-app` is a text-first song chart editor and player built with React 19 + TypeScript, Express/Vite SSR, and Tone.js.
+songsheet-app is a text-first song chart editor and player built with React 19, TypeScript, Express/Vite SSR, and Tone.js.
 
-It takes plaintext song files, parses them into structured song data, renders chord/lyric charts, and plays them back with synchronized highlighting.
+It takes plaintext song files, parses them into structured song data, renders chord and lyric charts, and plays them back with synchronized highlighting.
 
-## Start In 30 Seconds
+## Start
 
 ```bash
 npm install
 npm run dev
 ```
 
-Then open `http://localhost:3000/songs`.
+Open `http://localhost:3000/songs` and select a chart.
 
-### 1) Browse the song library
+## Playback and Vamping
 
-The song list is the entry point into the system. From this page you pick a chart and move into either the song detail view for playback or the edit view for source updates.
+Playback advances through parsed positions while highlighting the active section and chord marker in the chart. Double-clicking a section header enables vamp mode for that section, cycling the audio cadence while the optional metronome click stays locked to the loop.
 
-![Song library landing page](screenshots/readme-song-list.png)
+![Playback and section vamping](screenshots/readme-playback-loop.gif)
 
-### 2) Shape playback settings from the chart view
+## Text-First Live Editing
 
-On `/songs/:id`, the chart and transport controls are already connected, so you can immediately shape how the song feels. Transpose shifts harmonic output in semitone steps, BPM changes pacing, and the metronome toggle adds or removes the beat click layer. What you should hear is a soft synth progression that follows the chart timeline, with a click on each beat when metronome is on; for `a-way-out-online` this resolves to a fast three-beat pulse because the song is `3/4` at `156 bpm`.
+The edit view keeps the plaintext source and rendered output side-by-side. Metadata, chord rows, lyric alignment, and section structure are re-parsed in place as you type, and edits to the BPM or meter become the next playback behavior immediately without any separate conversion step. The README demo inserts a new `PRECHORUS:` block directly before the first `CHORUS:` marker so you can see section creation happen in real time.
 
-![Transpose, BPM, and metronome controls](screenshots/readme-transpose-tempo.png)
+![Live edit with instant preview](screenshots/readme-live-edit.gif)
 
-From this page, `Edit` opens `/songs/:id/edit` for source updates, and `Stage` opens `/songs/:id/performance` for the large-format performance layout. On desktop widths, the control strip is sized to keep `Stage`, `Export`, and `Edit` on one row.
+## Chart Features
 
-### 3) Edit plaintext and see the chart update live
+The chart and transport controls directly manipulate the parsed musical intent. Transpose shifts harmonic output in semitone steps, the Nashville Number System toggle translates keyed songs to scale-degree harmony, the export menu provides output paths like printing or plain text downloads, and the dedicated performance view enlarges typography for stage readability.
 
-The edit view keeps source and rendered output side-by-side, so each change stays grounded in visible feedback. As you type, metadata, chord rows, lyric alignment, and section structure are re-parsed in place, and BPM or meter edits become the next playback behavior without any separate conversion step. The preview controls include a `Chart` link to return to `/songs/:id`.
+![Chart feature sequence](screenshots/readme-chart-features.gif)
 
-![Live editing viewport](screenshots/readme-live-edit.png)
+## Parsing Plaintext
 
-### 4) Play the chart and loop a section
-
-Playback advances through parsed positions while highlighting the active section and chord marker in the chart. Double-clicking a section header enables vamp mode for that section, which is useful for rehearsal and timing checks. In audio terms, you hear the same cadence cycling until vamp is cleared, with the optional metronome click staying locked to the loop.
-
-![Animated playback loop](screenshots/readme-playback-loop.gif)
-
-### 5) Take it on stage with a dedicated performance page
-
-`/songs/:id/performance` keeps only transport controls and enlarges chart typography so the song stays readable at a distance. It still supports line click-to-seek and section double-click vamping for rehearsal flow.
-
-![Performance mode stage layout](screenshots/readme-performance-mode.png)
-
-### 6) Take the chart anywhere with export options
-
-From the song detail controls, `Export` opens three output paths: `PDF / Print` (via browser print dialog), `Plain Text` (downloads the source `.txt`), and `Copy Share Link` (copies the current chart URL). The print stylesheet hides navigation and transport controls so exported pages contain only song content.
-
-![Export options menu](screenshots/readme-export.png)
-
-### 7) Switch chord notation to Nashville numbers
-
-For keyed songs, you can switch to Nashville Number System to see scale-degree harmony instead of letter-name chords. This changes representation, not musical intent, so playback audio remains harmonically equivalent while the chart becomes easier to communicate in number-based workflows.
-
-![Nashville number mode](screenshots/readme-nashville.png)
+Syntax and semantics map directly onto behavior. The header defines metadata and default transport settings. Chord placement is column-sensitive against lyric text. Measure boundaries are encoded with vertical pipes, and section labels create explicit structural entries consumed by both the renderer and the audio engine.
 
 ### 8) Deep dive: parse text into a full song detail page
 
@@ -170,10 +148,10 @@ In this file, syntax and semantics map directly onto behavior: the `Title - Auth
 | `npm run test:watch` | Vitest in watch mode |
 | `npm run test:ui` | Vitest browser UI |
 | `npm run test:e2e` | Run Playwright E2E tests |
-| `npm run test:e2e:readme-screenshots` | Run just the README screenshot tests |
-| `npm run test:e2e:readme-gif` | Generate README playback GIF artifact |
-| `npm run refresh:readme-playback-gif` | Alias for README playback GIF generation |
-| `npm run refresh:readme-screenshots` | Clear and regenerate README screenshots |
+| `npm run test:e2e:readme-screenshots` | Run README screenshot test (generates `readme-song-detail-full.png`) |
+| `npm run test:e2e:readme-gif` | Generate README GIFs (`readme-playback-loop.gif`, `readme-live-edit.gif`, `readme-chart-features.gif`) |
+| `npm run refresh:readme-playback-gif` | Alias for README GIF generation |
+| `npm run refresh:readme-screenshots` | Clear PNG screenshots and regenerate `readme-song-detail-full.png` |
 
 ## Project Map
 
@@ -197,6 +175,6 @@ src/
   shared/graphql/            # Shared schema/operations
   server/graphql/            # Data store + executors
 test/                        # Vitest tests
-e2e/                         # Playwright tests + README screenshot scenarios
+e2e/                         # Playwright tests + README screenshot/GIF generation specs
 public/songs/                # Plaintext song files
 ```
