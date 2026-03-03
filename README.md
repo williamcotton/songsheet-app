@@ -37,7 +37,7 @@ The edit view keeps source and rendered output side-by-side, so each change stay
 
 Playback advances through parsed positions while highlighting the active section and chord marker in the chart. Double-clicking a section header enables vamp mode for that section, which is useful for rehearsal and timing checks. In audio terms, you hear the same cadence cycling until vamp is cleared, with the optional metronome click staying locked to the loop.
 
-![Playback with section loop](screenshots/readme-playback-loop.png)
+![Animated playback loop](screenshots/readme-playback-loop.gif)
 
 ### 5) Take it on stage with a dedicated performance page
 
@@ -171,6 +171,8 @@ In this file, syntax and semantics map directly onto behavior: the `Title - Auth
 | `npm run test:ui` | Vitest browser UI |
 | `npm run test:e2e` | Run Playwright E2E tests |
 | `npm run test:e2e:readme-screenshots` | Run just the README screenshot tests |
+| `npm run test:e2e:readme-gif` | Generate README playback GIF artifact |
+| `npm run refresh:readme-playback-gif` | Alias for README playback GIF generation |
 | `npm run refresh:readme-screenshots` | Clear and regenerate README screenshots |
 
 ## Project Map

@@ -16,6 +16,8 @@ npm run test:ui      # vitest browser UI
 npm run test:e2e     # playwright E2E tests (starts dev server automatically)
 npm run clean:screenshots              # delete screenshots/ artifacts
 npm run test:e2e:readme-screenshots    # run README screenshot scenario spec only
+npm run test:e2e:readme-gif            # generate README playback GIF artifact
+npm run refresh:readme-playback-gif    # alias for README playback GIF generation
 npm run refresh:readme-screenshots     # clean screenshots/ then regenerate README screenshots
 ```
 
@@ -69,12 +71,13 @@ Two test systems configured via `vitest.config.ts` and `playwright.config.ts`:
   - `test/useAutoScroll.test.ts` — scroll animation hook with rAF mocking
   - `test/audioEngine.test.ts` — Tone.js engine with full mock of Transport/Synth/Draw
   - `test/useAudioPlayback.test.ts` — playback hook lifecycle with mocked engine
-- **Playwright** (30 tests) — browser E2E tests in `e2e/`, run against the dev server
+- **Playwright** (31 specs) — browser E2E tests in `e2e/`, run against the dev server
   - `e2e/song-list.spec.ts` — list page rendering and navigation
   - `e2e/song-detail.spec.ts` — detail page, stage route link, export actions, transpose, Nashville toggle
   - `e2e/song-edit.spec.ts` — editor, chart-link navigation, live preview, save
   - `e2e/playback.spec.ts` — play/pause/stop, click-to-seek, section vamp, performance-page minimal controls
   - `e2e/readme-screenshots.spec.ts` — curated screenshot scenarios for README sections (`readme-*.png`, including `readme-performance-mode.png` and `readme-export.png`); playback capture waits for both active section and active chord highlight
+  - `e2e/readme-playback-gif.spec.ts` — on-demand GIF capture workflow (`readme-playback-loop.gif`) gated by `GENERATE_README_GIF=1`
 
 ### README Screenshot Workflow
 
