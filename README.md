@@ -35,8 +35,6 @@ The chart and transport controls directly manipulate the parsed musical intent. 
 
 Syntax and semantics map directly onto behavior. The header defines metadata and default transport settings. Chord placement is column-sensitive against lyric text. Measure boundaries are encoded with vertical pipes, and section labels create explicit structural entries consumed by both the renderer and the audio engine.
 
-### 8) Deep dive: parse text into a full song detail page
-
 The primary reference file is `public/songs/a-way-out-online.txt`, which is the source used across the screenshots above.
 
 <details>
@@ -44,7 +42,7 @@ The primary reference file is `public/songs/a-way-out-online.txt`, which is the 
 
 ```txt
 A Way Out Online - Willie Cotton
-(156 bpm, 3/4 time)
+(156 bpm, 3/4 time, C key)
 
        C               |
 Well I know you Knight Riders
@@ -121,7 +119,7 @@ Current parser output summary for that file:
     "beats": 3,
     "value": 4
   },
-  "key": null,
+  "key": "C",
   "sections": 7,
   "playbackMeasures": 112,
   "firstSection": "verse",
@@ -133,7 +131,7 @@ That parsed structure drives the full rendered detail page and playback timeline
 
 ![Full song detail (full page)](screenshots/readme-song-detail-full.png)
 
-In this file, syntax and semantics map directly onto behavior: the `Title - Author` header defines metadata, `(156 bpm, 3/4 time)` configures transport defaults, chord placement is column-sensitive against lyric text, `|` encodes measure boundaries, and labels like `CHORUS:` become explicit structural entries that both rendering and playback consume.
+In this file, syntax and semantics map directly onto behavior: the `Title - Author` header defines metadata, `(156 bpm, 3/4 time, C key)` configures transport/key defaults, chord placement is column-sensitive against lyric text, `|` encodes measure boundaries, and labels like `CHORUS:` become explicit structural entries that both rendering and playback consume.
 
 ## Development Commands
 

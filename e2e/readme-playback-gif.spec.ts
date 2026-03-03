@@ -159,18 +159,21 @@ test.describe('README GIF generation', () => {
   })
 
   test('generate readme-chart-features.gif', async ({ page }) => {
-    await page.goto('/songs/spent-some-time-in-buffalo')
+    await page.goto('/songs/a-way-out-online')
     await waitForHydration(page)
     await expect(page.locator('#btn-nashville')).toBeEnabled()
 
     const frameDir = `${TEMP_ROOT}/chart-features`
-    await captureFrames(page, frameDir, 66, 100, async (index) => {
-      if (index === 8) await page.click('#btn-transpose-up')
-      if (index === 18) await page.click('#btn-transpose-up')
-      if (index === 28) await page.click('#btn-nashville')
-      if (index === 38) await page.click('#btn-export')
-      if (index === 48) await page.click('#btn-performance-link')
-      if (index === 54) await expect(page).toHaveURL('/songs/spent-some-time-in-buffalo/performance')
+    await captureFrames(page, frameDir, 74, 100, async (index) => {
+      if (index === 8) await page.click('#btn-nashville')
+      if (index === 12) await expect(page.locator('#btn-nashville')).toHaveClass(/on/)
+      if (index === 18) await page.click('#btn-nashville')
+      if (index === 22) await expect(page.locator('#btn-nashville')).not.toHaveClass(/on/)
+      if (index === 30) await page.click('#btn-transpose-up')
+      if (index === 40) await page.click('#btn-transpose-up')
+      if (index === 50) await page.click('#btn-export')
+      if (index === 60) await page.click('#btn-performance-link')
+      if (index === 66) await expect(page).toHaveURL('/songs/a-way-out-online/performance')
     })
     await renderGif(frameDir, 'screenshots/readme-chart-features.gif', 8)
   })

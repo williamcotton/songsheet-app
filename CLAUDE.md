@@ -77,7 +77,7 @@ Two test systems configured via `vitest.config.ts` and `playwright.config.ts`:
   - `e2e/song-edit.spec.ts` — editor, chart-link navigation, live preview, save
   - `e2e/playback.spec.ts` — play/pause/stop, click-to-seek, section vamp, performance-page minimal controls
   - `e2e/readme-screenshots.spec.ts` — README PNG scenario for `readme-song-detail-full.png`
-  - `e2e/readme-playback-gif.spec.ts` — on-demand GIF capture workflow (gated by `GENERATE_README_GIF=1`) generating `readme-playback-loop.gif`, `readme-live-edit.gif` (adds `PRECHORUS:` before first `CHORUS:`), and `readme-chart-features.gif`
+  - `e2e/readme-playback-gif.spec.ts` — on-demand GIF capture workflow (gated by `GENERATE_README_GIF=1`) generating `readme-playback-loop.gif`, `readme-live-edit.gif` (adds `PRECHORUS:` before first `CHORUS:`), and `readme-chart-features.gif` (on `a-way-out-online`: NNS on/off, transpose, export, performance link)
 
 ### README Asset Workflow
 
